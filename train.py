@@ -19,24 +19,24 @@ if __name__ == '__main__':
     parser.add_argument('--seed', type=int, default=313)
 
     # Add data args.
-    parser.add_argument('--train_path', type=str, default='data/preprocessed/semcor/semcor.json')
+    parser.add_argument('--train_path', type=str, default='data/preprocessed/glosses/semcor.glosses.untagged.json')
     parser.add_argument('--dev_path', type=str, default='data/preprocessed/semeval2007/semeval2007.json')
 
     # Data processing
-    parser.add_argument('--include_similar', action='store_true')
-    parser.add_argument('--include_related', action='store_true')
-    parser.add_argument('--include_verb_groups', action='store_true')
-    parser.add_argument('--include_hypernyms', action='store_true')
-    parser.add_argument('--include_hyponyms', action='store_true')
+    parser.add_argument('--include_similar', default=True, action='store_true')
+    parser.add_argument('--include_related', default=True, action='store_true')
+    parser.add_argument('--include_verb_groups', default=True, action='store_true')
+    parser.add_argument('--include_hypernyms', default=True, action='store_true')
+    parser.add_argument('--include_hyponyms', default=True, action='store_true')
     parser.add_argument('--include_instance_hypernyms', action='store_true')
     parser.add_argument('--include_instance_hyponyms', action='store_true')
-    parser.add_argument('--include_also_see', action='store_true')
+    parser.add_argument('--include_also_see', default=True, action='store_true')
     parser.add_argument('--include_pertainyms', action='store_true')
     parser.add_argument('--include_pagerank', action='store_true')
     parser.add_argument('--pagerank_k', type=int, default=10)
 
     # Add dataloader args.
-    parser.add_argument('--batch_size', type=int, default=32)
+    parser.add_argument('--batch_size', type=int, default=128)
     parser.add_argument('--shuffle', action='store_true', default=True)
     parser.add_argument('--num_workers', type=int, default=4)
 
@@ -49,17 +49,18 @@ if __name__ == '__main__':
     # Add all the available trainer options to argparse.
     parser = Trainer.add_argparse_args(parser)
     parser.set_defaults(
-        min_epochs=3,
-        max_epochs=25,
+        min_epochs=1,
+        max_epochs=15,
         gpus=1,
         precision=16,
-        gradient_clip_val=1.0,
+        gradient_clip_val=2.0,
         row_log_interval=128,
         deterministic=True,
     )
 
     # Store the arguments in hparams.
     hparams = parser.parse_args()
+    print(hparams)
 
     seed_everything(hparams.seed)
 
@@ -80,7 +81,8 @@ if __name__ == '__main__':
         include_also_see_synsets=hparams.include_also_see,
         include_pertainyms_synsets=hparams.include_pertainyms,
         include_pagerank_synsets=hparams.include_pagerank,
-        pagerank_k=hparams.pagerank_k)
+        pagerank_k=hparams.pagerank_k
+    )
 
     synset_embeddings = None if not hparams.use_synset_embeddings else processor.load_synset_embeddings(hparams.synset_embeddings_path)
 
