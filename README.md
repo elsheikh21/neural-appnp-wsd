@@ -51,4 +51,38 @@ Pre-preprocessed ARES embeddings is needed to train your model:
 --- 
 
 ## Train
-  - To be written later
+
+<details>
+<summary>Model & Training Flags</summary>
+
+- Required training flags are set in `train.py`
+  - include_hyponyms
+  - include_hypernyms
+  - include_also_see
+  - include_related
+  - include_verb_groups
+  - include_pagerank
+  - pagerank_k 10
+  - batch_size 128
+  - num_workers 4
+
+- Required model flags are set in `model.py`
+  - loss_type 'cross_entropy'
+  - synset_embeddings_path 'data/embeddings/synset_embeddings.txt'
+  - use_synset_embeddings
+  - graph_path
+  - use_graph_convolution
+  - use_trainable_graph
+  - word_dropout 0.3
+  - language_model 'bert-large-cased'
+  - language_model_fine_tuning False
+  - learning_rate 5e-4
+  - min_learning_rate 1e-6
+  - language_model_learning_rate 1e-5
+  - language_model_min_learning_rate 1e-6
+</details>
+  
+  ```bash
+  cd <repo_name>
+  python3 train.py --name <your_experiment_name>
+  ```
