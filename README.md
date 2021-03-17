@@ -6,7 +6,7 @@ This repo hosts my work for my masters program thesis in NLP, Under the supervis
 
 ## Installation
 
-- make sure to have miniconda installed.
+- make sure to have miniconda installed. if not, [install it](https://docs.conda.io/en/latest/miniconda.html)
 - It is recommended to create a fresh `conda` env to use the repo 
   
 ```bash
@@ -16,7 +16,14 @@ This repo hosts my work for my masters program thesis in NLP, Under the supervis
 - pip install -r requirements.txt
 - pip install torch==1.5.0+cu101 torchvision==0.6.0+cu101 -f https://download.pytorch.org/whl/torch_stable.html
 - pip install torch-sparse torch-scatter -f https://pytorch-geometric.com/whl/torch-1.5.0+cu101.html
+```
 
+- if it needs `APEX` to be installed
+
+```bash
+git clone https://github.com/NVIDIA/apex
+cd apex
+pip install -v --disable-pip-version-check --no-cache-dir --global-option="--cpp_ext" --global-option="--cuda_ext" ./
 ```
 
 --- 
