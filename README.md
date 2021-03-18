@@ -1,6 +1,6 @@
  # Extending EWISER with EACL 2021
 
-This repo hosts my work for my masters program thesis in NLP, Under the supervision of Prof. Roberto Navigli and PhD. Michele Bevilacqua. Trying to break the State of the Art (SOTA) in Word Sense Disambiguation (WSD) task by integrating EWISER approach with Framing WSD as multilabel classification problem by Simone Cantone. The SOTA model achieved 79.0% on WSD Unified Evaluation framework.
+This repo hosts my work for my masters program thesis in NLP, Under the supervision of Prof. Roberto Navigli and PhD. Michele Bevilacqua. Trying to break the State of the Art (SOTA) in Word Sense Disambiguation (WSD) task by integrating EWISER approach with Framing WSD as multilabel classification problem by Simone Cantone and applying Approximate Personalized Propagation of Neural Predictions . The SOTA model achieved 79.0% on WSD Unified Evaluation framework.
 
 ---
 
@@ -80,6 +80,8 @@ Pre-preprocessed ARES embeddings is needed to train your model:
   - min_learning_rate 1e-6
   - language_model_learning_rate 1e-5
   - language_model_min_learning_rate 1e-6
+  - power_iterations 10
+  - alpha 0.15
 </details>
   
   ```bash

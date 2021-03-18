@@ -44,6 +44,14 @@ class SimpleModel(pl.LightningModule):
         if self.hparams.use_graph_convolution:
             synset_scores += self.graph_encoder(synset_scores)
 
+        if self.hparams.power_iterations > 0:
+            k_iter = self.hparams.power_iterations
+            alpha = self.hparams.alpha
+            curr_logits = synset_scores
+            for _ in range(k_iter):
+                curr_logits = (1 - alpha) * self.graph_encoder(curr_logits) + (alpha * synset_scores)
+            synset_scores = curr_logits
+
         return {
             'synsets': synset_scores,
         }
@@ -353,4 +361,8 @@ class SimpleModel(pl.LightningModule):
         parser.add_argument('--language_model_learning_rate', type=float, default=1e-5)
         parser.add_argument('--language_model_min_learning_rate', type=float, default=1e-6)
         parser.add_argument('--language_model_weight_decay', type=float, default=1e-4)
+
+        parser.add_argument('--power_iterations', type=int, default=10)
+        parser.add_argument('--alpha', type=float, default=0.15)
+
         return parser
