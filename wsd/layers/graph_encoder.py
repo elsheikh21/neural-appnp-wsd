@@ -6,7 +6,6 @@ from torch_sparse import spmm
 
 
 class GraphEncoder(nn.Module):
-
     def __init__(self, hparams):
         super(GraphEncoder, self).__init__()
         num_synsets, synset_indices, synset_values = GraphEncoder._load_graph()

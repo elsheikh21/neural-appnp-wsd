@@ -25,21 +25,17 @@ if __name__ == '__main__':
                         default='data/preprocessed/semeval2007/semeval2007.json')
 
     # Data processing
+    parser.add_argument('--include_hypernyms',default=True, action='store_true')
+    parser.add_argument('--include_hyponyms', default=True, action='store_true')
     parser.add_argument('--include_similar', default=True, action='store_true')
     parser.add_argument('--include_related', default=True, action='store_true')
-    parser.add_argument('--include_verb_groups',
-                        default=True, action='store_true')
-    parser.add_argument('--include_hypernyms',
-                        default=True, action='store_true')
-    parser.add_argument('--include_hyponyms',
-                        default=True, action='store_true')
+    parser.add_argument('--include_also_see', default=True, action='store_true')
+    parser.add_argument('--include_verb_groups', default=True, action='store_true')
     parser.add_argument('--include_instance_hypernyms', action='store_true')
     parser.add_argument('--include_instance_hyponyms', action='store_true')
-    parser.add_argument('--include_also_see',
-                        default=True, action='store_true')
     parser.add_argument('--include_pertainyms', action='store_true')
-    parser.add_argument('--include_pagerank',
-                        default=True, action='store_true')
+
+    parser.add_argument('--include_pagerank', default=True, action='store_true')
     parser.add_argument('--pagerank_k', type=int, default=10)
 
     # Add dataloader args.
@@ -48,8 +44,7 @@ if __name__ == '__main__':
     parser.add_argument('--num_workers', type=int, default=4)
 
     # Add checkpoint args.
-    parser.add_argument('--checkpoint_dir', type=str,
-                        default='yat_thesis/checkpoints')
+    parser.add_argument('--checkpoint_dir', type=str, default='checkpoints')
 
     # Add model-specific args.
     parser = SimpleModel.add_model_specific_args(parser)
@@ -58,12 +53,12 @@ if __name__ == '__main__':
     parser = Trainer.add_argparse_args(parser)
     parser.set_defaults(
         min_epochs=1,
-        max_epochs=15,
+        max_epochs=30,
         gpus=1,
         precision=16,
-        gradient_clip_val=2.0,
+        gradient_clip_val=5.0,
         row_log_interval=128,
-        deterministic=True,
+        deterministic=True
     )
 
     # Store the arguments in hparams.
@@ -94,55 +89,43 @@ if __name__ == '__main__':
     synset_embeddings = None if not hparams.use_synset_embeddings else processor.load_synset_embeddings(
         hparams.synset_embeddings_path)
 
-    train_dataloader = DataLoader(
-        train_dataset,
-        batch_size=hparams.batch_size,
-        shuffle=hparams.shuffle,
-        num_workers=hparams.num_workers,
-        collate_fn=processor.collate_sentences)
+    train_dataloader = DataLoader(train_dataset, batch_size=hparams.batch_size,
+                                  shuffle=hparams.shuffle,
+                                  num_workers=hparams.num_workers,
+                                  collate_fn=processor.collate_sentences)
 
-    dev_dataloader = DataLoader(
-        dev_dataset,
-        batch_size=hparams.batch_size,
-        num_workers=hparams.num_workers,
-        collate_fn=processor.collate_sentences)
+    dev_dataloader = DataLoader(dev_dataset,
+                                batch_size=hparams.batch_size,
+                                num_workers=hparams.num_workers,
+                                collate_fn=processor.collate_sentences)
 
     # Additional hparams.
     hparams.steps_per_epoch = int(
         len(train_dataset) / (hparams.batch_size * hparams.accumulate_grad_batches)) + 1
     hparams.num_synsets = processor.num_synsets
 
-    model = SimpleModel(
-        hparams,
-        synset_embeddings=synset_embeddings,
-        padding_token_id=processor.padding_token_id)
+    model = SimpleModel(hparams,
+                        synset_embeddings=synset_embeddings,
+                        padding_token_id=processor.padding_token_id)
 
     model_dir = os.path.join(hparams.checkpoint_dir, hparams.name)
     if not os.path.exists(model_dir):
         os.makedirs(model_dir)
     processor_config_path = os.path.join(model_dir, 'processor_config.json')
-    model_checkpoint_path = os.path.join(
-        model_dir, 'checkpoint_{val_f1:0.4f}_{epoch:03d}')
+    model_checkpoint_path = os.path.join(model_dir,
+                                         'checkpoint_{val_f1:0.4f}_{epoch:03d}')
 
     processor.save_config(processor_config_path)
-    checkpoint_callback = ModelCheckpoint(
-        filepath=model_checkpoint_path,
-        monitor='val_f1',
-        mode='max',
-        save_top_k=2,
-        verbose=True)
+    checkpoint_callback = ModelCheckpoint(filepath=model_checkpoint_path,
+                                          monitor='val_f1', mode='max',
+                                          save_top_k=2, verbose=True)
 
-    early_stopping_callback = EarlyStopping(
-        monitor='val_f1',
-        patience=3,
-        verbose=True,
-        mode='max'
-    )
+    # early_stopping_callback = EarlyStopping(monitor='val_f1', patience=5,
+    #                                         verbose=True, mode='max')
 
-    trainer = Trainer.from_argparse_args(
-        hparams,
-        checkpoint_callback=checkpoint_callback,
-        early_stop_callback=early_stopping_callback)
+    trainer = Trainer.from_argparse_args(hparams,
+                                         checkpoint_callback=checkpoint_callback)
+                                        #  early_stop_callback=early_stopping_callback)
 
     trainer.fit(model, train_dataloader=train_dataloader,
                 val_dataloaders=dev_dataloader)

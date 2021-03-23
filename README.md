@@ -1,4 +1,4 @@
- # Extending EWISER with EACL 2021
+ # Extending EWISER with EACL 2021 & APPNP
 
 This repo hosts my work for my masters program thesis in NLP, Under the supervision of Prof. Roberto Navigli and PhD. Michele Bevilacqua. Trying to break the State of the Art (SOTA) in Word Sense Disambiguation (WSD) task by integrating EWISER approach with Framing WSD as multilabel classification problem by Simone Cantone and applying Approximate Personalized Propagation of Neural Predictions . The SOTA model achieved 79.0% on WSD Unified Evaluation framework.
 
@@ -9,22 +9,22 @@ This repo hosts my work for my masters program thesis in NLP, Under the supervis
 - make sure to have miniconda installed. if not, [install it](https://docs.conda.io/en/latest/miniconda.html)
 - It is recommended to create a fresh `conda` env to use the repo 
   
-```bash
-- conda create -n ewiser_ext python=3.6.9 pip
-- conda activate ewiser_ext
-- git clone github.com/elsheikh21/nlp_thesis.git
-- pip install -r requirements.txt
-- pip install torch==1.5.0+cu101 torchvision==0.6.0+cu101 -f https://download.pytorch.org/whl/torch_stable.html
-- pip install torch-sparse torch-scatter -f https://pytorch-geometric.com/whl/torch-1.5.0+cu101.html
-```
+  ```bash
+  - conda create -n ewiser_ext python=3.6.9 pip
+  - conda activate ewiser_ext
+  - git clone github.com/elsheikh21/nlp_thesis.git
+  - pip install -r requirements.txt
+  - pip install torch==1.5.0+cu101 torchvision==0.6.0+cu101 -f https://download.pytorch.org/whl/torch_stable.html
+  - pip install torch-sparse torch-scatter -f https://pytorch-geometric.com/whl/torch-1.5.0+cu101.html
+  ```
 
 - if it needs `APEX` to be installed
 
-```bash
-git clone https://github.com/NVIDIA/apex
-cd apex
-pip install -v --disable-pip-version-check --no-cache-dir --global-option="--cpp_ext" --global-option="--cuda_ext" ./
-```
+  ```bash
+  git clone https://github.com/NVIDIA/apex
+  cd apex
+  pip install -v --disable-pip-version-check --no-cache-dir --global-option="--cpp_ext" --global-option="--cuda_ext" ./
+  ```
 
 --- 
 ## Externally downloadable resources
@@ -45,46 +45,29 @@ Pre-preprocessed ARES embeddings is needed to train your model:
 ---
 
 ## Evaluate
-  - To be written later
+ - vim the `predict_eval_script.sh` to change 
+    - CKPT_DIR to the checkpoints directory path  
+    - CKPT_MDL to checkpoint model saved path
+    - `--model_input` points to the dataset to be used for evaluation
+    - `--evaluation_input` points to the gold file of the eval dataset
 
-
+- then run the following
+    ```bash
+    cd yat_thesis
+    sh predict_eval_script.sh
+    ```
+  
 --- 
 
-## Train
-
-<details>
-<summary>Model & Training Flags</summary>
-
-- Required training flags are set in `train.py`
-  - include_hyponyms
-  - include_hypernyms
-  - include_also_see
-  - include_related
-  - include_verb_groups
-  - include_pagerank
-  - pagerank_k 10
-  - batch_size 128
-  - num_workers 4
-
-- Required model flags are set in `model.py`
-  - loss_type 'cross_entropy'
-  - synset_embeddings_path 'data/embeddings/synset_embeddings.txt'
-  - use_synset_embeddings
-  - graph_path
-  - use_graph_convolution
-  - use_trainable_graph
-  - word_dropout 0.3
-  - language_model 'bert-large-cased'
-  - language_model_fine_tuning False
-  - learning_rate 5e-4
-  - min_learning_rate 1e-6
-  - language_model_learning_rate 1e-5
-  - language_model_min_learning_rate 1e-6
-  - power_iterations 10
-  - alpha 0.15
-</details>
+## Train 
+ - All flags related to training & model params can be found in `train.py` & `wsd/models/model.py`
+ - Run the following script
+    ```bash
+    cd yat_thesis
+    sh train.sh
+    ```
+  - or to make it run in background
   
-  ```bash
-  cd <repo_name>
-  python3 train.py --name <your_experiment_name>
-  ```
+    ```bash
+    nohup sh train.sh > experiment_name.out & 
+    ```
