@@ -34,24 +34,15 @@ def patched_lemma_from_key(key):
     return lemma
 
 
-def preprocess_embeddings(lmms_path, sensembert_path, output_path, n_components=512):
+def preprocess_embeddings(lmms_path, output_path, n_components=512):
     sense_vectors = {}
     is_noun = lambda s: sense[sense.index('%') + 1] != '1'
 
-    logging.info('Reading LMMS embeddings...')
+    logging.info('Reading embeddings...')
     with open(lmms_path) as f:
         for line in f:
             sense, *values = line.strip().split()
             if not is_noun(sense):
-                values = [float(v) for v in values]
-                assert len(values) == 2048
-                sense_vectors[sense] = values
-    
-    logging.info('Reading SensEmBERT embeddings...')
-    with open(sensembert_path) as f:
-        for line in f:
-            sense, *values = line.strip().split()
-            if is_noun(sense):
                 values = [float(v) for v in values]
                 assert len(values) == 2048
                 sense_vectors[sense] = values
@@ -91,42 +82,18 @@ def preprocess_embeddings(lmms_path, sensembert_path, output_path, n_components=
 
     logging.info('Done!')
 
-
+# TODO: TRY PREPROCESSING ARES EMBEDDINGS, ANCORA UNA VOLATA
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        '--lmms',
-        type=str,
-        required=True,
-        help='Path to LMMS.')
-    parser.add_argument(
-        '--sensembert',
-        type=str,
-        required=True,
-        help='Path to SensEmBERT.')
-    parser.add_argument(
-        '--output_size',
-        type=int,
-        default=512,
-        help='Number of components for the output vectors.')
-    parser.add_argument(
-        '--output',
-        type=str,
-        required=True,
-        dest='output_path',
-        help='Path to the output embedding file.')
-    parser.add_argument(
-        '--log',
-        type=str,
-        default='WARNING',
-        dest='loglevel',
-        help='Log level. Default = WARNING.')
+    parser.add_argument('--embeddings file', type=str, required=True, help='Path to your embeddings file to preprocess.')
+    # parser.add_argument('--sensembert', type=str, required=True, help='Path to SensEmBERT.')
+    parser.add_argument('--output_size', type=int, default=512, help='Number of components for the output vectors.')
+    parser.add_argument('--output', type=str, required=True, dest='output_path', help='Path to the output embedding file.')
+    parser.add_argument('--log', type=str, default='WARNING', dest='loglevel', help='Log level. Default = WARNING.')
     args = parser.parse_args()
 
     logging.basicConfig(level=getattr(logging, args.loglevel.upper()))
 
     logging.info('Preprocessing embeddings...')
-
     preprocess_embeddings(args.lmms, args.sensembert, args.output_path, n_components=args.output_size)
-
     logging.info('Done!')

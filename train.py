@@ -120,12 +120,12 @@ if __name__ == '__main__':
                                           monitor='val_f1', mode='max',
                                           save_top_k=2, verbose=True)
 
-    # early_stopping_callback = EarlyStopping(monitor='val_f1', patience=5,
-    #                                         verbose=True, mode='max')
+    early_stopping_callback = EarlyStopping(monitor='val_f1', patience=5,
+                                            verbose=True, mode='max')
 
     trainer = Trainer.from_argparse_args(hparams,
-                                         checkpoint_callback=checkpoint_callback)
-                                        #  early_stop_callback=early_stopping_callback)
+                                         checkpoint_callback=checkpoint_callback,
+                                         early_stop_callback=early_stopping_callback)
 
     trainer.fit(model, train_dataloader=train_dataloader,
                 val_dataloaders=dev_dataloader)

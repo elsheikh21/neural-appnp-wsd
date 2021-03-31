@@ -333,8 +333,8 @@ class SimpleModel(pl.LightningModule):
         parser = ArgumentParser(parents=[parent_parser], add_help=False)
         parser.add_argument('--loss_type', type=str, default='binary_cross_entropy')
 
-        parser.add_argument('--synset_embeddings_path', type=str, default='data/embeddings/synset_embeddings.txt')
-        parser.add_argument('--use_synset_embeddings', default=True, action='store_true')
+        parser.add_argument('--synset_embeddings_path', type=str)
+        parser.add_argument('--use_synset_embeddings', default=False, action='store_true')
 
         parser.add_argument('--graph_path', type=str, default='data/wn_graph.json')
         parser.add_argument('--use_graph_convolution', default=True, action='store_true')

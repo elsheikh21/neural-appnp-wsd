@@ -1,14 +1,18 @@
-python3 train.py --name ewiser_baseline_0 --loss_type cross_entropy --power_iterations 0
-python3 train.py --name ewiser_baseline_1 --loss_type cross_entropy --power_iterations 1
-python3 train.py --name ewiser_baseline_5 --loss_type cross_entropy --power_iterations 5
-python3 train.py --name ewiser_baseline_10 --loss_type cross_entropy --power_iterations 10
+python3 train.py --name ewiser_baseline_0 --loss_type cross_entropy --power_iterations 0 --use_synset_embeddings --synset_embeddings_path data/embeddings/synset_embeddings.txt
+python3 train.py --name ewiser_baseline_1 --loss_type cross_entropy --power_iterations 1 --use_synset_embeddings --synset_embeddings_path data/embeddings/synset_embeddings.txt
+python3 train.py --name ewiser_baseline_5 --loss_type cross_entropy --power_iterations 5 --use_synset_embeddings --synset_embeddings_path data/embeddings/synset_embeddings.txt
+python3 train.py --name ewiser_baseline_10 --loss_type cross_entropy --power_iterations 10 --use_synset_embeddings --synset_embeddings_path data/embeddings/synset_embeddings.txt
 
-python3 train.py --name eacl_baseline_0 --loss_type binary_cross_entropy --power_iterations 0
-python3 train.py --name eacl_baseline_1 --loss_type binary_cross_entropy --power_iterations 1
-python3 train.py --name eacl_baseline_5 --loss_type binary_cross_entropy --power_iterations 5
-python3 train.py --name eacl_baseline_10 --loss_type binary_cross_entropy --power_iterations 10
+python3 train.py --name eacl_baseline_0 --loss_type binary_cross_entropy --power_iterations 0 > eacl_baseline_0.out &
+python3 train.py --name eacl_baseline_1 --loss_type binary_cross_entropy --power_iterations 1 > eacl_baseline_1.out &
+python3 train.py --name eacl_baseline_5 --loss_type binary_cross_entropy --power_iterations 5 > eacl_baseline_5.out &
+python3 train.py --name eacl_baseline_10 --loss_type binary_cross_entropy --power_iterations 10 > eacl_baseline_10.out 
 
-python3 train.py --name ewiser_eacl_baseline_0 --loss_type binary_cross_entropy --power_iterations 0
-python3 train.py --name ewiser_eacl_baseline_1 --loss_type binary_cross_entropy --power_iterations 1
-python3 train.py --name ewiser_eacl_baseline_5 --loss_type binary_cross_entropy --power_iterations 5
-python3 train.py --name ewiser_eacl_baseline_10 --loss_type binary_cross_entropy --power_iterations 10
+nohup sh -c 'python3 train.py --name ewiser_eacl_baseline_10 --loss_type binary_cross_entropy --power_iterations 10 --use_synset_embeddings --synset_embeddings_path data/embeddings/synset_embeddings.txt > ewiser_eacl_baseline_10.out && python3 train.py --name eacl_baseline_0 --loss_type binary_cross_entropy --power_iterations 0 > eacl_baseline_0.out && python3 train.py --name eacl_baseline_1 --loss_type binary_cross_entropy --power_iterations 1 > eacl_baseline_1.out && python3 train.py --name eacl_baseline_5 --loss_type binary_cross_entropy --power_iterations 5 > eacl_baseline_5.out && python3 train.py --name eacl_baseline_10 --loss_type binary_cross_entropy --power_iterations 10 > eacl_baseline_10.out' > nohup_eacl.out &
+
+python3 train.py --name ewiser_eacl_baseline_0 --loss_type binary_cross_entropy --power_iterations 0 --use_synset_embeddings --synset_embeddings_path data/embeddings/synset_embeddings.txt
+python3 train.py --name ewiser_eacl_baseline_1 --loss_type binary_cross_entropy --power_iterations 1 --use_synset_embeddings --synset_embeddings_path data/embeddings/synset_embeddings.txt
+python3 train.py --name ewiser_eacl_baseline_5 --loss_type binary_cross_entropy --power_iterations 5 --use_synset_embeddings --synset_embeddings_path data/embeddings/synset_embeddings.txt
+python3 train.py --name ewiser_eacl_baseline_10 --loss_type binary_cross_entropy --power_iterations 10 --use_synset_embeddings --synset_embeddings_path data/embeddings/synset_embeddings.txt
+
+nohup sh -c 'python3 train.py --name ewiser_baseline_0 --loss_type cross_entropy --power_iterations 0 > ewiser_baseline_0.out && python3 train.py --name ewiser_baseline_1 --loss_type cross_entropy --power_iterations 1 > ewiser_baseline_1.out && python3 train.py --name ewiser_baseline_5 --loss_type cross_entropy --power_iterations 5 > ewiser_baseline_5.out && python3 train.py --name ewiser_baseline_10 --loss_type cross_entropy --power_iterations 10 > ewiser_baseline_10.out && python3 train.py --name eacl_baseline_0 --loss_type binary_cross_entropy --power_iterations 0 > eacl_baseline_0.out && python3 train.py --name eacl_baseline_1 --loss_type binary_cross_entropy --power_iterations 1 > eacl_baseline_1.out && python3 train.py --name eacl_baseline_5 --loss_type binary_cross_entropy --power_iterations 5 > eacl_baseline_5.out && python3 train.py --name eacl_baseline_10 --loss_type binary_cross_entropy --power_iterations 10 > eacl_baseline_10.out && python3 train.py --name ewiser_eacl_baseline_0 --loss_type binary_cross_entropy --power_iterations 0 > ewiser_eacl_baseline_0.out && python3 train.py --name ewiser_eacl_baseline_1 --loss_type binary_cross_entropy --power_iterations 1 > ewiser_eacl_baseline_1.out && python3 train.py --name ewiser_eacl_baseline_5 --loss_type binary_cross_entropy --power_iterations 5 > ewiser_eacl_baseline_5.out && python3 train.py --name ewiser_eacl_baseline_10 --loss_type binary_cross_entropy --power_iterations 10 > ewiser_eacl_baseline_10.out ' > nohup_multiple.out
