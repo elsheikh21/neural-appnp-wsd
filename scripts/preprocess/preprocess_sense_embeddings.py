@@ -82,10 +82,9 @@ def preprocess_embeddings(lmms_path, output_path, n_components=512):
 
     logging.info('Done!')
 
-# TODO: TRY PREPROCESSING ARES EMBEDDINGS, ANCORA UNA VOLATA
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--embeddings file', type=str, required=True, help='Path to your embeddings file to preprocess.')
+    parser.add_argument('--embeddings_file', type=str, required=True, help='Path to your embeddings file to preprocess.')
     # parser.add_argument('--sensembert', type=str, required=True, help='Path to SensEmBERT.')
     parser.add_argument('--output_size', type=int, default=512, help='Number of components for the output vectors.')
     parser.add_argument('--output', type=str, required=True, dest='output_path', help='Path to the output embedding file.')
