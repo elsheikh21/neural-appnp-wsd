@@ -16,7 +16,7 @@ if __name__ == '__main__':
     parser.add_argument('--name', type=str, required=True)
 
     # Add seed arg.
-    parser.add_argument('--seed', type=int, default=313)
+    parser.add_argument('--seed', type=int, default=1873337)
 
     # Add data args.
     parser.add_argument('--train_path', type=str, default='data/preprocessed/glosses/semcor.glosses.untagged.json')

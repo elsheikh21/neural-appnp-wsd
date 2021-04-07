@@ -329,28 +329,47 @@ class SimpleModel(pl.LightningModule):
         parser = ArgumentParser(parents=[parent_parser], add_help=False)
         parser.add_argument('--loss_type', type=str, default='cross_entropy')
 
-        parser.add_argument('--synset_embeddings_path', type=str, default='data/embeddings/ares_synset_embeddings.txt')
-        parser.add_argument('--use_synset_embeddings', default=True, action='store_true')
+        parser.add_argument('--synset_embeddings_path', type=str,
+                            default='data/embeddings/ares_synset_embeddings_01.txt')
+        parser.add_argument('--use_synset_embeddings',
+                            default=True, action='store_true')
 
-        parser.add_argument('--graph_path', type=str, default='data/wn_graph.json')
-        parser.add_argument('--use_graph_convolution', default=True, action='store_true')
-        parser.add_argument('--use_trainable_graph', default=True, action='store_true')
+        parser.add_argument('--graph_path', type=str,
+                            default='data/wn_graph.json')
+        parser.add_argument('--use_graph_convolution',
+                            default=True, action='store_true')
+        parser.add_argument('--use_trainable_graph',
+                            default=True, action='store_true')
 
-        parser.add_argument('--loss_masking', default=True, action='store_true')
-        parser.add_argument('--temperature', type=float, default=2.0)
+        parser.add_argument('--loss_masking', default=True,
+                            action='store_true')
+        parser.add_argument('--temperature', type=float, default=1.0)
         parser.add_argument('--num_negative_samples', type=int, default=64)
 
-        parser.add_argument('--word_projection_size', type=int, default=512)  # 384
-        parser.add_argument('--word_dropout', type=float, default=0.3)  # 0.25
-        parser.add_argument('--language_model', type=str, default='bert-large-cased')
-        parser.add_argument('--language_model_fine_tuning', action='store_true')
+        parser.add_argument('--word_projection_size', type=int, default=512)
+        parser.add_argument('--word_dropout', type=float, default=0.3)
+        parser.add_argument('--language_model', type=str,
+                            default='bert-large-cased')
+        parser.add_argument('--language_model_fine_tuning',
+                            action='store_true')
 
         parser.add_argument('--warmup_epochs', type=float, default=0.0)
         parser.add_argument('--cooldown_epochs', type=int, default=10)
+
         parser.add_argument('--learning_rate', type=float, default=5e-4)
         parser.add_argument('--min_learning_rate', type=float, default=1e-7)
         parser.add_argument('--weight_decay', type=float, default=1e-4)
-        parser.add_argument('--language_model_learning_rate', type=float, default=1e-5)
-        parser.add_argument('--language_model_min_learning_rate', type=float, default=1e-7)
-        parser.add_argument('--language_model_weight_decay', type=float, default=1e-4)
+
+        parser.add_argument('--language_model_learning_rate',
+                            type=float, default=1e-5)
+        parser.add_argument(
+            '--language_model_min_learning_rate', type=float, default=1e-7)
+        parser.add_argument('--language_model_weight_decay',
+                            type=float, default=1e-4)
+
+        parser.add_argument('--power_iterations', type=int, default=10)
+        parser.add_argument('--alpha', type=float, default=0.15)
+        parser.add_argument('--optimize_alpha',
+                            default=True, action='store_true')
+
         return parser
