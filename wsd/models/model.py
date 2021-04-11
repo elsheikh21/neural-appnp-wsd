@@ -23,11 +23,18 @@ class SimpleModel(pl.LightningModule):
         if self.hparams.use_graph_convolution:
             self.graph_encoder = GraphEncoder(self.hparams)
 
-        if self.hparams.optimize_alpha:
-            self.alpha = torch.nn.Parameter(torch.tensor(self.hparams.alpha),
-                                            requires_grad=True)
-        else:
+        # For predictions on diff models with argument alpha (un)optimized
+        try:
+            if self.hparams.optimize_alpha:
+                self.alpha = torch.nn.Parameter(
+                    torch.tensor(0.15), requires_grad=True)
+            else:
+                self.alpha = self.hparams.alpha
+        except (AttributeError, KeyError):
             self.alpha = self.hparams.alpha
+        except RuntimeError:
+            self.alpha = torch.nn.Parameter(
+                torch.tensor(0.15), requires_grad=True)
 
         self.synset_scorer = nn.Linear(
             word_embedding_size, self.num_synsets, bias=False)
@@ -52,7 +59,8 @@ class SimpleModel(pl.LightningModule):
             k_iter = self.hparams.power_iterations
             curr_logits = synset_scores
             for _ in range(k_iter):
-                curr_logits = (1 - self.alpha) * self.graph_encoder(curr_logits) + (self.alpha * synset_scores)
+                curr_logits = (
+                    1 - self.alpha) * self.graph_encoder(curr_logits) + (self.alpha * synset_scores)
             synset_scores = curr_logits
 
         return {'synsets': synset_scores}
@@ -362,7 +370,7 @@ class SimpleModel(pl.LightningModule):
         parser.add_argument('--use_graph_convolution',
                             default=True, action='store_true')
         parser.add_argument('--use_trainable_graph',
-                            default=False, action='store_true')
+                            default=True, action='store_true')
 
         parser.add_argument('--loss_masking', default=True,
                             action='store_true')
