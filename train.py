@@ -25,7 +25,7 @@ if __name__ == '__main__':
                         default='data/preprocessed/semeval2007/semeval2007.json')
 
     # Data processing
-    parser.add_argument('--include_hypernyms',default=True, action='store_true')
+    parser.add_argument('--include_hypernyms', default=True, action='store_true')
     parser.add_argument('--include_hyponyms', default=True, action='store_true')
     parser.add_argument('--include_similar', default=True, action='store_true')
     parser.add_argument('--include_related', default=True, action='store_true')
