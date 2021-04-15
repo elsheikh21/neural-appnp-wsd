@@ -34,6 +34,7 @@ if __name__ == '__main__':
     parser.add_argument('--include_instance_hypernyms', action='store_true')
     parser.add_argument('--include_instance_hyponyms', action='store_true')
     parser.add_argument('--include_pertainyms', action='store_true')
+    parser.add_argument('--include_syntag', default=True, action='store_true')
 
     parser.add_argument('--include_pagerank', default=True, action='store_true')
     parser.add_argument('--pagerank_k', type=int, default=10)
@@ -79,6 +80,7 @@ if __name__ == '__main__':
         include_verb_group_synsets=hparams.include_verb_groups,
         include_hypernym_synsets=hparams.include_hypernyms,
         include_hyponym_synsets=hparams.include_hyponyms,
+        include_syntags=hparams.include_syntag,
         include_instance_hypernyms_synsets=hparams.include_instance_hypernyms,
         include_instance_hyponyms_synsets=hparams.include_instance_hyponyms,
         include_also_see_synsets=hparams.include_also_see,
