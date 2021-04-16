@@ -51,7 +51,7 @@ class Processor(object):
         self.include_related_synsets = include_related_synsets
         self.include_verb_group_synsets = include_verb_group_synsets
         self.include_hypernym_synsets = include_hypernym_synsets
-        self.include_syntag = include_syntag
+        self.include_syntag = include_syntags
         self.include_hyponym_synsets = include_hyponym_synsets
         self.include_instance_hypernym_synsets = include_instance_hypernym_synsets
         self.include_instance_hyponym_synsets = include_instance_hyponym_synsets

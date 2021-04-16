@@ -20,7 +20,7 @@ if __name__ == '__main__':
 
     # Add data args.
     parser.add_argument('--train_path', type=str,
-                        default='data/preprocessed/glosses/semcor.glosses.examples.json')
+                        default='data/preprocessed/glosses/semcor.glosses.untagged.json')
     parser.add_argument('--dev_path', type=str,
                         default='data/preprocessed/semeval2007/semeval2007.json')
 
