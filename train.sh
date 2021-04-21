@@ -1,0 +1,1 @@
+nohup python3 train.py --name prova_ares > prova_ares.out &

@@ -3,9 +3,10 @@ import random
 
 import numpy as np
 import torch
-from nltk.corpus import wordnet as wn
 from torch.nn.utils.rnn import pad_sequence
 from transformers import AutoTokenizer
+
+from nltk.corpus import wordnet as wn
 
 
 class Processor(object):
@@ -26,6 +27,7 @@ class Processor(object):
             include_similar_synsets=False,
             include_related_synsets=False,
             include_verb_group_synsets=False,
+            include_syntags=False,
             include_hypernym_synsets=False,
             include_hyponym_synsets=False,
             include_instance_hypernym_synsets=False,
@@ -49,6 +51,7 @@ class Processor(object):
         self.include_related_synsets = include_related_synsets
         self.include_verb_group_synsets = include_verb_group_synsets
         self.include_hypernym_synsets = include_hypernym_synsets
+        self.include_syntag = include_syntags
         self.include_hyponym_synsets = include_hyponym_synsets
         self.include_instance_hypernym_synsets = include_instance_hypernym_synsets
         self.include_instance_hyponym_synsets = include_instance_hyponym_synsets
@@ -81,8 +84,11 @@ class Processor(object):
             self.synset2also_see = maps['synset2also_see']
             self.synset2pertainyms = maps['synset2pertainyms']
             self.synset2pagerank = maps['synset2pagerank']
+            self.synset2syntags = maps['synset2syntags']
             Processor._build_graph(self.synset2id, self.synset2similars, self.synset2groups,
-                                   self.synset2related, self.synset2hypernyms, self.synset2hyponyms, graph_file_path)
+                                   self.synset2related, self.synset2hypernyms, self.synset2hyponyms,
+                                   self.synset2also_see, self.synset2pertainyms, self.synset2syntags,
+                                   graph_file_path)
 
     def encode_sentence(self, sentence, MAX_LENGTH=500):
         word_ids = []
@@ -177,6 +183,14 @@ class Processor(object):
                                 _synset_weights.append(
                                     1. / num_related_synsets)
 
+                    if self.include_syntag:
+                        num_syntags = len(self.synset2syntags[synset_id])
+                        for syntag_id in self.synset2syntags[synset_id]:
+                            if syntag_id not in _synset_candidates and syntag_id not in _synset_ids:
+                                _synset_ids.append(syntag_id)
+                                _synset_values.append(1.0)
+                                _synset_weights.append(1. / num_syntags)
+
                     if self.include_verb_group_synsets:
                         num_verb_group_synsets = len(
                             self.synset2groups[synset_id])
@@ -196,6 +210,12 @@ class Processor(object):
                                 _synset_values.append(1.0)
                                 _synset_weights.append(
                                     1. / num_hypernym_synsets)
+                                # _num_hypernym_synsets = len(self.synset2hypernyms[hypernym_id])
+                                # for _hypernym_id in self.synset2hypernyms[hypernym_id]:
+                                #     if _hypernym_id not in _synset_candidates and _hypernym_id not in _synset_ids:
+                                #         _synset_ids.append(_hypernym_id)
+                                #         _synset_values.append(1.0)
+                                #         _synset_weights.append(1. / (num_hypernym_synsets * _num_hypernym_synsets))
 
                     if self.include_hyponym_synsets:
                         num_hyponym_synsets = len(
@@ -206,6 +226,12 @@ class Processor(object):
                                 _synset_values.append(1.0)
                                 _synset_weights.append(
                                     1. / num_hyponym_synsets)
+                                # _num_hyponym_synsets = len(self.synset2hyponyms[hyponym_id])
+                                # for _hyponym_id in self.synset2hyponyms[hyponym_id]:
+                                #     if _hyponym_id not in _synset_candidates and _hyponym_id not in _synset_ids:
+                                #         _synset_ids.append(_hyponym_id)
+                                #         _synset_values.append(1.0)
+                                #         _synset_weights.append(1. / (num_hyponym_synsets * _num_hyponym_synsets))
 
                     if self.include_instance_hypernym_synsets:
                         num_instance_hypernym_synsets = len(
@@ -452,25 +478,42 @@ class Processor(object):
         return processor
 
     @staticmethod
+    def _extract_syntagmatic_edges(file_path='data/SYNTAGNET_1.0.txt'):
+        with open(file_path, encoding='utf-8', mode='r') as file_:
+            lines = file_.read().splitlines()[2:]
+
+        syntag_synsets = {}
+        for line in lines:
+            synset1, synset2, _, _, _, _ = line.split('\t')
+            # synset1, synset2, lemma1, pos1, lemma2, pos2 = line.split('\t')
+            if synset1 in syntag_synsets:
+                syntag_synsets[synset1].append(synset2)
+            else:
+                syntag_synsets[synset1] = [synset2]
+
+        return syntag_synsets
+
+    @staticmethod
     def _build_maps(pagerank_path, pagerank_k):
         synset2id = {'<unk>': 0}
 
         for synset in wn.all_synsets():
-            synset_ = f"wn:{str(synset.offset()).zfill(8)}{synset.pos()}"
-            if synset_ not in synset2id:
-                synset2id[synset_] = len(synset2id)
+            synset = synset.name()
+            if synset not in synset2id:
+                synset2id[synset] = len(synset2id)
 
         id2synset = {id: synset for synset, id in synset2id.items()}
 
         word2synsets = {}
+
+        syntags = Processor._extract_syntagmatic_edges()
 
         for word in wn.words():
             word2synsets[word] = {}
             for pos in Processor._pos_classes.values():
                 word2synsets[word][pos] = []
                 for synset in wn.synsets(word, pos=pos):
-                    synset_ = f"wn:{str(synset.offset()).zfill(8)}{synset.pos()}"
-                    synset_id = synset2id[synset_]
+                    synset_id = synset2id[synset.name()]
                     word2synsets[word][pos].append(synset_id)
 
         synset2hypernyms = {synset2id['<unk>']: []}
@@ -482,81 +525,77 @@ class Processor(object):
         synset2instance_hyponyms = {synset2id['<unk>']: []}
         synset2also_see = {synset2id['<unk>']: []}
         synset2pertainyms = {synset2id['<unk>']: []}
+        synset2syntags = {synset2id['<unk>']: []}
         for synset in wn.all_synsets():
-            synset_ = f"wn:{str(synset.offset()).zfill(8)}{synset.pos()}"
-            synset_id = synset2id[synset_]
+            synset_id = synset2id[synset.name()]
+
+            synset2syntags[synset_id] = []
+            _synset = f"{synset._offset:08}{synset._pos}"
+            if _synset in syntags:
+                for syntag in syntags[_synset]:
+                    syntag_ = wn.of2ss(syntag)
+                    syntag_id = synset2id[syntag_.name()]
+                    synset2syntags[synset_id].append(syntag_id)
 
             synset2hypernyms[synset_id] = []
             for hypernym in synset.hypernyms():
-                hypernym_ = f"wn:{str(hypernym.offset()).zfill(8)}{hypernym.pos()}"
-                hypernym_id = synset2id[hypernym_]
+                hypernym_id = synset2id[hypernym.name()]
                 synset2hypernyms[synset_id].append(hypernym_id)
 
             synset2hyponyms[synset_id] = []
             for hyponym in synset.hyponyms():
-                hyponym_ = f"wn:{str(hyponym.offset()).zfill(8)}{hyponym.pos()}"
-                hyponym_id = synset2id[hyponym_]
+                hyponym_id = synset2id[hyponym.name()]
                 synset2hyponyms[synset_id].append(hyponym_id)
 
             synset2similars[synset_id] = []
             for similar in synset.similar_tos():
-                similar_ = f"wn:{str(similar.offset()).zfill(8)}{similar.pos()}"
-                similar_id = synset2id[similar_]
+                similar_id = synset2id[similar.name()]
                 synset2similars[synset_id].append(similar_id)
 
             synset2groups[synset_id] = []
             for group in synset.verb_groups():
-                group_ = f"wn:{str(group.offset()).zfill(8)}{group.pos()}"
-                group_id = synset2id[group_]
+                group_id = synset2id[group.name()]
                 synset2groups[synset_id].append(group_id)
 
             synset2related[synset_id] = []
             synset2pertainyms[synset_id] = []
             for lemma in synset.lemmas():
                 for related_lemma in lemma.derivationally_related_forms():
-                    _synset = related_lemma.synset()
-                    synset_ = f"wn:{str(_synset.offset()).zfill(8)}{_synset.pos()}"
-                    related_synset_id = synset2id[synset_]
+                    related_synset_id = synset2id[related_lemma.synset(
+                    ).name()]
                     if related_synset_id not in synset2related[synset_id]:
                         synset2related[synset_id].append(related_synset_id)
                 for pertainym in lemma.pertainyms():
-                    _synset = pertainym.synset()
-                    synset_ = f"wn:{str(_synset.offset()).zfill(8)}{_synset.pos()}"
-                    pertainym_id = synset2id[synset_]
+                    pertainym_id = synset2id[pertainym.synset().name()]
                     if pertainym_id not in synset2pertainyms[synset_id]:
                         synset2pertainyms[synset_id].append(pertainym_id)
 
             synset2instance_hypernyms[synset_id] = []
             for instance_hypernym in synset.instance_hypernyms():
-                instance_hypernym_ = f"wn:{str(instance_hypernym.offset()).zfill(8)}{instance_hypernym.pos()}"
-                instance_hypernym_id = synset2id[instance_hypernym_]
+                instance_hypernym_id = synset2id[instance_hypernym.name()]
                 synset2instance_hypernyms[synset_id].append(
                     instance_hypernym_id)
 
             synset2instance_hyponyms[synset_id] = []
             for instance_hyponym in synset.instance_hyponyms():
-                instance_hyponym_ = f"wn:{str(instance_hyponym.offset()).zfill(8)}{instance_hyponym.pos()}"
-                instance_hyponym_id = synset2id[instance_hyponym_]
+                instance_hyponym_id = synset2id[instance_hyponym.name()]
                 synset2instance_hyponyms[synset_id].append(instance_hyponym_id)
 
             synset2also_see[synset_id] = []
             for also_see in synset.also_sees():
-                also_see_ = f"wn:{str(also_see.offset()).zfill(8)}{also_see.pos()}"
-                also_see_id = synset2id[also_see_]
+                also_see_id = synset2id[also_see.name()]
                 synset2also_see[synset_id].append(also_see_id)
 
         synset2pagerank = {}
         with open(pagerank_path) as f:
             for line in f:
                 synset, *values = line.strip().split()
-                synset_id = synset2id[synset_]
+                synset_id = synset2id[synset]
                 synset2pagerank[synset_id] = []
                 for value in values:
                     other_synset, _ = value.split('=')
                     if other_synset != synset:
-                        other_synset = wn.synset(other_synset)
-                        other_ = f"wn:{str(other_synset.offset()).zfill(8)}{other_synset.pos()}"
-                        other_synset_id = synset2id[other_]
+                        other_synset_id = synset2id[other_synset]
                         synset2pagerank[synset_id].append(other_synset_id)
                         if len(synset2pagerank[synset_id]) == pagerank_k:
                             break
@@ -578,6 +617,7 @@ class Processor(object):
             'synset2also_see': synset2also_see,
             'synset2pertainyms': synset2pertainyms,
             'synset2pagerank': synset2pagerank,
+            'synset2syntags': synset2syntags,
         }
 
     def load_synset_embeddings(self, synset_embeddings_path):
@@ -598,27 +638,65 @@ class Processor(object):
         return torch.as_tensor(np_vectors)
 
     @staticmethod
-    def _build_graph(synset2id, synset2similars, synset2groups, synset2related, synset2hypernyms, synset2hyponyms, output_path):
+    def _build_graph(synset2id, synset2similars, synset2groups, synset2related, synset2hypernyms, synset2hyponyms, synset2also_see, synset2pertainyms, synset2syntags, output_path):
         synset_indices = [[], []]
         synset_values = []
 
         for synset in synset2id.values():
-            degree = len(
-                synset2similars[synset]) + len(synset2hypernyms[synset]) + len(synset2hyponyms[synset])
+            # synset_indices[0].append(synset)
+            # synset_indices[1].append(synset)
+            # synset_values.append(1.0)
+            degree = len(synset2groups[synset]) + len(synset2similars[synset]) + \
+                len(synset2hypernyms[synset]) + len(synset2hyponyms[synset]) + \
+                len(synset2related[synset]) + len(synset2also_see[synset]) + \
+                len(synset2pertainyms[synset]) + len(synset2syntags[synset])
+
+            for syntag in synset2syntags[synset]:
+                synset_indices[0].append(synset)
+                synset_indices[1].append(syntag)
+                # synset_values.append(1. / len(synset2groups[synset]))
+                synset_values.append(1. / degree)
+
+            for also_see in synset2also_see[synset]:
+                synset_indices[0].append(synset)
+                synset_indices[1].append(also_see)
+                # synset_values.append(1. / len(synset2groups[synset]))
+                synset_values.append(1. / degree)
+
+            for pertainym in synset2pertainyms[synset]:
+                synset_indices[0].append(synset)
+                synset_indices[1].append(pertainym)
+                # synset_values.append(1. / len(synset2groups[synset]))
+                synset_values.append(1. / degree)
+
+            for group in synset2groups[synset]:
+                synset_indices[0].append(synset)
+                synset_indices[1].append(group)
+                # synset_values.append(1. / len(synset2groups[synset]))
+                synset_values.append(1. / degree)
 
             for similar in synset2similars[synset]:
                 synset_indices[0].append(synset)
                 synset_indices[1].append(similar)
+                # synset_values.append(1. / len(synset2similars[synset]))
+                synset_values.append(1. / degree)
+
+            for related in synset2related[synset]:
+                synset_indices[0].append(synset)
+                synset_indices[1].append(related)
+                # synset_values.append(1. / len(synset2similars[synset]))
                 synset_values.append(1. / degree)
 
             for hypernym in synset2hypernyms[synset]:
                 synset_indices[0].append(synset)
                 synset_indices[1].append(hypernym)
+                # synset_values.append(1. / len(synset2hypernyms[synset]))
                 synset_values.append(1. / degree)
 
             for hyponym in synset2hyponyms[synset]:
                 synset_indices[0].append(synset)
                 synset_indices[1].append(hyponym)
+                # synset_values.append(1. / len(synset2hyponyms[synset]))
                 synset_values.append(1. / degree)
 
         graph = {

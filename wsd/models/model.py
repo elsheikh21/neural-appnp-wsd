@@ -10,7 +10,6 @@ from wsd.layers.graph_encoder import GraphEncoder
 
 
 class SimpleModel(pl.LightningModule):
-
     def __init__(self, hparams, synset_embeddings=None, padding_token_id=0, padding_target_id=-1):
         super(SimpleModel, self).__init__()
         self.hparams = hparams
@@ -24,7 +23,21 @@ class SimpleModel(pl.LightningModule):
         if self.hparams.use_graph_convolution:
             self.graph_encoder = GraphEncoder(self.hparams)
 
-        self.synset_scorer = nn.Linear(word_embedding_size, self.num_synsets, bias=False)
+        # For predictions on diff models with argument alpha (un)optimized
+        try:
+            if self.hparams.optimize_alpha:
+                self.alpha = torch.nn.Parameter(
+                    torch.tensor(0.15), requires_grad=True)
+            else:
+                self.alpha = self.hparams.alpha
+        except (AttributeError, KeyError):
+            self.alpha = self.hparams.alpha
+        except RuntimeError:
+            self.alpha = torch.nn.Parameter(
+                torch.tensor(0.15), requires_grad=True)
+
+        self.synset_scorer = nn.Linear(
+            word_embedding_size, self.num_synsets, bias=False)
         if synset_embeddings is not None:
             with torch.no_grad():
                 self.synset_scorer.weight.copy_(synset_embeddings)
@@ -35,18 +48,22 @@ class SimpleModel(pl.LightningModule):
         tokenized_sequence_lengths = x['tokenized_sequence_lengths']
         synset_indices = x['synset_indices']
 
-        word_embeddings = self.word_encoder(word_ids, subword_indices=subword_indices, sequence_lengths=tokenized_sequence_lengths)
+        word_embeddings = self.word_encoder(
+            word_ids, subword_indices=subword_indices, sequence_lengths=tokenized_sequence_lengths)
         word_embeddings = word_embeddings[synset_indices]
 
         synset_scores = self.synset_scorer(word_embeddings)
         synset_scores /= self.hparams.temperature
 
-        if self.hparams.use_graph_convolution:
-            synset_scores += self.graph_encoder(synset_scores)
+        if self.hparams.power_iterations > 0:
+            k_iter = self.hparams.power_iterations
+            curr_logits = synset_scores
+            for _ in range(k_iter):
+                curr_logits = (
+                    1 - self.alpha) * self.graph_encoder(curr_logits) + (self.alpha * synset_scores)
+            synset_scores = curr_logits
 
-        return {
-            'synsets': synset_scores,
-        }
+        return {'synsets': synset_scores}
 
     def configure_optimizers(self):
         base_parameters = []
@@ -80,25 +97,34 @@ class SimpleModel(pl.LightningModule):
     def optimizer_step(self, current_epoch, batch_nb, optimizer, optimizer_i, second_order_closure=None, using_native_amp=None):
         step = self.trainer.global_step
         warmup_steps = self.hparams.warmup_epochs * self.hparams.steps_per_epoch
-        cooldown_steps = warmup_steps + self.hparams.cooldown_epochs * self.hparams.steps_per_epoch
+        cooldown_steps = warmup_steps + \
+            self.hparams.cooldown_epochs * self.hparams.steps_per_epoch
         training_steps = self.hparams.max_epochs * self.hparams.steps_per_epoch
 
         if step < warmup_steps:
             lr_scale = min(1., float(step + 1) / warmup_steps)
-            optimizer.param_groups[0]['lr'] = lr_scale * self.hparams.learning_rate
-            optimizer.param_groups[1]['lr'] = lr_scale * self.hparams.language_model_learning_rate
+            optimizer.param_groups[0]['lr'] = lr_scale * \
+                self.hparams.learning_rate
+            optimizer.param_groups[1]['lr'] = lr_scale * \
+                self.hparams.language_model_learning_rate
 
         elif step < cooldown_steps:
-            progress = float(step - warmup_steps) / float(max(1, cooldown_steps - warmup_steps))
+            progress = float(step - warmup_steps) / \
+                float(max(1, cooldown_steps - warmup_steps))
             lr_scale = (1. - progress)
-            optimizer.param_groups[0]['lr'] = self.hparams.min_learning_rate + lr_scale * (self.hparams.learning_rate - self.hparams.min_learning_rate)
-            optimizer.param_groups[1]['lr'] = self.hparams.language_model_min_learning_rate + lr_scale * (self.hparams.language_model_learning_rate - self.hparams.language_model_min_learning_rate)
+            optimizer.param_groups[0]['lr'] = self.hparams.min_learning_rate + lr_scale * (
+                self.hparams.learning_rate - self.hparams.min_learning_rate)
+            optimizer.param_groups[1]['lr'] = self.hparams.language_model_min_learning_rate + lr_scale * (
+                self.hparams.language_model_learning_rate - self.hparams.language_model_min_learning_rate)
 
         else:
-            progress = float(step - cooldown_steps) / float(max(1, training_steps - cooldown_steps))
+            progress = float(step - cooldown_steps) / \
+                float(max(1, training_steps - cooldown_steps))
             lr_scale = (1. - progress)
-            optimizer.param_groups[0]['lr'] = lr_scale * self.hparams.min_learning_rate
-            optimizer.param_groups[1]['lr'] = lr_scale * self.hparams.language_model_min_learning_rate
+            optimizer.param_groups[0]['lr'] = lr_scale * \
+                self.hparams.min_learning_rate
+            optimizer.param_groups[1]['lr'] = lr_scale * \
+                self.hparams.language_model_min_learning_rate
 
         # Update params.
         optimizer.step()
@@ -149,7 +175,8 @@ class SimpleModel(pl.LightningModule):
 
         elif self.hparams.loss_type == 'binary_cross_entropy':
             positive_samples = labels['synsets'].tolist()
-            labels['synsets'] = torch.sparse.FloatTensor(labels['synsets'], labels['synset_values'], scores['synsets'].size()).to_dense()
+            labels['synsets'] = torch.sparse.FloatTensor(
+                labels['synsets'], labels['synset_values'], scores['synsets'].size()).to_dense()
             loss = SimpleModel._compute_binary_classification_loss(
                 scores['synsets'],
                 labels['synsets'],
@@ -157,7 +184,8 @@ class SimpleModel(pl.LightningModule):
                 positive_samples=positive_samples if self.hparams.loss_masking else None,
                 negative_samples=labels['negative_samples'] if self.hparams.loss_masking and self.hparams.num_negative_samples > 0 else None)
         else:
-            raise ValueError('Unsupported loss type "{}".'.format(self.hparams.loss_type))
+            raise ValueError('Unsupported loss type "{}".'.format(
+                self.hparams.loss_type))
 
         if torch.isnan(loss) or not torch.isfinite(loss):
             print('Loss:', loss)
@@ -293,7 +321,8 @@ class SimpleModel(pl.LightningModule):
         synsets_g = labels['synsets']
         synsets_p = torch.argmax(scores['synsets'], dim=-1)
         if loss_type == 'cross_entropy':
-            num_correct_synsets = (synsets_p[synsets_g >= 0] == synsets_g[synsets_g >= 0]).sum()
+            num_correct_synsets = (
+                synsets_p[synsets_g >= 0] == synsets_g[synsets_g >= 0]).sum()
             num_synsets = (synsets_g >= 0).sum()
         else:
             num_correct_synsets = 0
@@ -310,8 +339,10 @@ class SimpleModel(pl.LightningModule):
 
     @staticmethod
     def _compute_epoch_metrics(outputs):
-        num_correct_synsets = torch.stack([o['metrics']['num_correct_synsets'] for o in outputs]).sum()
-        num_synsets = torch.stack([o['metrics']['num_synsets'] for o in outputs]).sum()
+        num_correct_synsets = torch.stack(
+            [o['metrics']['num_correct_synsets'] for o in outputs]).sum()
+        num_synsets = torch.stack(
+            [o['metrics']['num_synsets'] for o in outputs]).sum()
         wsd_f1 = torch.true_divide(num_correct_synsets, num_synsets)
         overall_f1 = wsd_f1
 
@@ -330,7 +361,7 @@ class SimpleModel(pl.LightningModule):
         parser.add_argument('--loss_type', type=str, default='cross_entropy')
 
         parser.add_argument('--synset_embeddings_path', type=str,
-                            default='data/embeddings/ares_synset_embeddings_01.txt')
+                            default='data/embeddings/synset_embeddings.txt')
         parser.add_argument('--use_synset_embeddings',
                             default=True, action='store_true')
 
@@ -369,7 +400,6 @@ class SimpleModel(pl.LightningModule):
 
         parser.add_argument('--power_iterations', type=int, default=10)
         parser.add_argument('--alpha', type=float, default=0.15)
-        parser.add_argument('--optimize_alpha',
-                            default=True, action='store_true')
+        parser.add_argument('--optimize_alpha', default=False, action='store_true')
 
         return parser
