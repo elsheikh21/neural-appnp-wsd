@@ -1,1 +1,1 @@
-nohup python3 train.py --name prova_ares > prova_ares.out &
+nohup python3 train.py --name prova_ares --synset_embeddings_path data/embeddings/ares_synset_embeddings.txt > prova_ares.out &
