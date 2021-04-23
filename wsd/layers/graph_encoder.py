@@ -6,8 +6,12 @@ from torch_sparse import spmm
 
 
 class GraphEncoder(nn.Module):
+<<<<<<< HEAD
 
     def __init__(self, hparams, graph_path='data/wn_graph.json'):
+=======
+    def __init__(self, hparams):
+>>>>>>> f4fac72b162ec5cacd2a9a0efb1f23434d0bdd68
         super(GraphEncoder, self).__init__()
         num_synsets, synset_indices, synset_values = GraphEncoder._load_graph(graph_path)
         self.num_synsets = num_synsets
