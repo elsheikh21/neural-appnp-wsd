@@ -137,7 +137,7 @@ dmypy.json
 *.class
 *.pth
 *.ckpt
-*.out 
+*.out
 
 .DS_Store
 

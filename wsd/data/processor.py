@@ -7,6 +7,7 @@ from torch.nn.utils.rnn import pad_sequence
 from transformers import AutoTokenizer
 
 from nltk.corpus import wordnet as wn
+from nltk.corpus.reader.wordnet import WordNetError
 
 
 class Processor(object):
@@ -60,6 +61,7 @@ class Processor(object):
         self.include_pagerank_synsets = include_pagerank_synsets
         self.pagerank_k = pagerank_k
         self.padding_target_id = -1
+        self.synset_offset2sense_key = self._fetch_synsetoffset2sensekey_mappings()
 
         self.language_model = language_model
         if self.language_model:
@@ -430,6 +432,16 @@ class Processor(object):
         with open(path, 'w') as f:
             json.dump(config, f, sort_keys=True, indent=4)
 
+    def _fetch_synsetoffset2sensekey_mappings(self, file_path='data/sensekey2offsets.txt'):
+        synset_offset2sense_key = {}
+        with open(file_path, encoding='utf-8', mode='r') as mappings_file:
+            mappings = mappings_file.read().splitlines()
+
+        for mapping in mappings:
+            sensekey, offset = mapping.split()
+            synset_offset2sense_key[offset] = sensekey
+        return synset_offset2sense_key
+
     @staticmethod
     def from_config(path):
         with open(path) as f:
@@ -620,14 +632,38 @@ class Processor(object):
             'synset2syntags': synset2syntags,
         }
 
+    def fetch_synset_name(self, synset):
+        key = self.synset_offset2sense_key[synset]
+        patching_data = {
+            'ddc%1:06:01::': 'dideoxycytosine.n.01.DDC',
+            'ddi%1:06:01::': 'dideoxyinosine.n.01.DDI',
+            'earth%1:15:01::': 'earth.n.04.earth',
+            'earth%1:17:02::': 'earth.n.01.earth',
+            'moon%1:17:03::': 'moon.n.01.moon',
+            'sun%1:17:02::': 'sun.n.01.Sun',
+            'kb%1:23:01::': 'kilobyte.n.02.kB',
+            'kb%1:23:03::': 'kilobyte.n.01.kB',
+        }
+        try:
+            lemma = wn.lemma_from_key(key)
+        except WordNetError as e:
+            if key in patching_data:
+                lemma = wn.lemma(patching_data[key])
+            elif '%3' in key:
+                lemma = wn.lemma_from_key(key.replace('%3', '%5'))
+            else:
+                raise e
+        return lemma.synset().name()
+
     def load_synset_embeddings(self, synset_embeddings_path):
         vectors = {}
 
         with open(synset_embeddings_path) as f:
             for line in f:
                 synset, *vector = line.strip().split()
-                assert synset in self.synset2id
-                vectors[synset] = [float(v) for v in vector]
+                synset_ = self.fetch_synset_name(synset)
+                assert synset_ in self.synset2id
+                vectors[synset_] = [float(v) for v in vector]
 
         n_components = len(vector)
         np_vectors = np.zeros((self.num_synsets, n_components))
