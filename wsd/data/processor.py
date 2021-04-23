@@ -38,7 +38,7 @@ class Processor(object):
             include_pagerank_synsets=False,
             pagerank_path='data/pr.txt',
             pagerank_k=10,
-            padding_token='<pad>',
+            use_synder=False,
             unknown_token='<unk>',
             graph_file_path='data/wn_graph.json',
             _load_from_config=False,
@@ -87,10 +87,10 @@ class Processor(object):
             self.synset2pertainyms = maps['synset2pertainyms']
             self.synset2pagerank = maps['synset2pagerank']
             self.synset2syntags = maps['synset2syntags']
-            Processor._build_graph(self.synset2id, self.synset2similars, self.synset2groups,
-                                   self.synset2related, self.synset2hypernyms, self.synset2hyponyms,
-                                   self.synset2also_see, self.synset2pertainyms, self.synset2syntags,
-                                   graph_file_path)
+            Processor._build_graph_wrapper(self.synset2id, self.synset2similars, self.synset2groups,
+                                           self.synset2related, self.synset2hypernyms, self.synset2hyponyms,
+                                           self.synset2also_see, self.synset2pertainyms, self.synset2syntags,
+                                           graph_file_path, use_synder)
 
     def encode_sentence(self, sentence, MAX_LENGTH=500):
         word_ids = []
@@ -661,7 +661,9 @@ class Processor(object):
         with open(synset_embeddings_path) as f:
             for line in f:
                 synset, *vector = line.strip().split()
-                synset_ = self.fetch_synset_name(synset)
+                # To account for using ares or senesembert + lmms
+                synset_ = self.fetch_synset_name(
+                    synset) if 'ares' in synset_embeddings_path else synset
                 assert synset_ in self.synset2id
                 vectors[synset_] = [float(v) for v in vector]
 
@@ -674,65 +676,70 @@ class Processor(object):
         return torch.as_tensor(np_vectors)
 
     @staticmethod
-    def _build_graph(synset2id, synset2similars, synset2groups, synset2related, synset2hypernyms, synset2hyponyms, synset2also_see, synset2pertainyms, synset2syntags, output_path):
+    def _build_graph_wrapper(synset2id, synset2similars, synset2groups, synset2related, synset2hypernyms, synset2hyponyms, synset2also_see, synset2pertainyms, synset2syntags, output_path, use_synder):
+        # TODO: Clean this method
+        if use_synder:
+            Processor._build_graph(synset2id, synset2similars, synset2groups,
+                                   synset2related, synset2hypernyms, synset2hyponyms,
+                                   synset2also_see, synset2pertainyms, synset2syntags, output_path)
+        else:
+            Processor._build_synder_graphs(synset2id, synset2similars,
+                                           synset2groups, synset2related,
+                                           synset2hypernyms, synset2hyponyms,
+                                           synset2also_see, synset2pertainyms,
+                                           synset2syntags, output_path)
+
+    @staticmethod
+    def _build_graph(synset2id, synset2similars, synset2groups,
+                     synset2related, synset2hypernyms, synset2hyponyms,
+                     synset2also_see, synset2pertainyms, synset2syntags, output_path):
         synset_indices = [[], []]
         synset_values = []
 
         for synset in synset2id.values():
-            # synset_indices[0].append(synset)
-            # synset_indices[1].append(synset)
-            # synset_values.append(1.0)
             degree = len(synset2groups[synset]) + len(synset2similars[synset]) + \
                 len(synset2hypernyms[synset]) + len(synset2hyponyms[synset]) + \
                 len(synset2related[synset]) + len(synset2also_see[synset]) + \
                 len(synset2pertainyms[synset]) + len(synset2syntags[synset])
 
-            for syntag in synset2syntags[synset]:
-                synset_indices[0].append(synset)
-                synset_indices[1].append(syntag)
-                # synset_values.append(1. / len(synset2groups[synset]))
-                synset_values.append(1. / degree)
-
             for also_see in synset2also_see[synset]:
                 synset_indices[0].append(synset)
                 synset_indices[1].append(also_see)
-                # synset_values.append(1. / len(synset2groups[synset]))
                 synset_values.append(1. / degree)
 
             for pertainym in synset2pertainyms[synset]:
                 synset_indices[0].append(synset)
                 synset_indices[1].append(pertainym)
-                # synset_values.append(1. / len(synset2groups[synset]))
                 synset_values.append(1. / degree)
 
             for group in synset2groups[synset]:
                 synset_indices[0].append(synset)
                 synset_indices[1].append(group)
-                # synset_values.append(1. / len(synset2groups[synset]))
                 synset_values.append(1. / degree)
 
             for similar in synset2similars[synset]:
                 synset_indices[0].append(synset)
                 synset_indices[1].append(similar)
-                # synset_values.append(1. / len(synset2similars[synset]))
-                synset_values.append(1. / degree)
-
-            for related in synset2related[synset]:
-                synset_indices[0].append(synset)
-                synset_indices[1].append(related)
-                # synset_values.append(1. / len(synset2similars[synset]))
                 synset_values.append(1. / degree)
 
             for hypernym in synset2hypernyms[synset]:
                 synset_indices[0].append(synset)
                 synset_indices[1].append(hypernym)
-                # synset_values.append(1. / len(synset2hypernyms[synset]))
                 synset_values.append(1. / degree)
 
             for hyponym in synset2hyponyms[synset]:
                 synset_indices[0].append(synset)
                 synset_indices[1].append(hyponym)
-                # synset_values.append(1. / len(synset2hyponyms[synset]))
+                synset_values.append(1. / degree)
+
+            for syntag in synset2syntags[synset]:
+                synset_indices[0].append(synset)
+                synset_indices[1].append(syntag)
+                synset_values.append(1. / degree)
+
+            for related in synset2related[synset]:
+                synset_indices[0].append(synset)
+                synset_indices[1].append(related)
                 synset_values.append(1. / degree)
 
         graph = {
@@ -743,3 +750,79 @@ class Processor(object):
 
         with open(output_path, 'w') as f:
             json.dump(graph, f)
+
+    @staticmethod
+    def _build_synder_graphs(synset2id, synset2similars, synset2groups,
+                             synset2related, synset2hypernyms, synset2hyponyms,
+                             synset2also_see, synset2pertainyms,
+                             synset2syntags, output_path):
+        synset_indices = [[], []]
+        synset_values = []
+
+        synder_indices = [[], []]
+        synder_values = []
+
+        for synset in synset2id.values():
+            degree = len(synset2groups[synset]) + len(synset2similars[synset]) + \
+                len(synset2hypernyms[synset]) + len(synset2hyponyms[synset]) + \
+                len(synset2related[synset]) + len(synset2also_see[synset]) + \
+                len(synset2pertainyms[synset]) + len(synset2syntags[synset])
+
+            for also_see in synset2also_see[synset]:
+                synset_indices[0].append(synset)
+                synset_indices[1].append(also_see)
+                synset_values.append(1. / degree)
+
+            for pertainym in synset2pertainyms[synset]:
+                synset_indices[0].append(synset)
+                synset_indices[1].append(pertainym)
+                synset_values.append(1. / degree)
+
+            for group in synset2groups[synset]:
+                synset_indices[0].append(synset)
+                synset_indices[1].append(group)
+                synset_values.append(1. / degree)
+
+            for similar in synset2similars[synset]:
+                synset_indices[0].append(synset)
+                synset_indices[1].append(similar)
+                synset_values.append(1. / degree)
+
+            for hypernym in synset2hypernyms[synset]:
+                synset_indices[0].append(synset)
+                synset_indices[1].append(hypernym)
+                synset_values.append(1. / degree)
+
+            for hyponym in synset2hyponyms[synset]:
+                synset_indices[0].append(synset)
+                synset_indices[1].append(hyponym)
+                synset_values.append(1. / degree)
+
+            for syntag in synset2syntags[synset]:
+                synder_indices[0].append(synset)
+                synder_indices[1].append(syntag)
+                synder_values.append(1. / degree)
+
+            for related in synset2related[synset]:
+                synder_indices[0].append(synset)
+                synder_indices[1].append(related)
+                synder_values.append(1. / degree)
+
+        graph = {
+            'n': len(synset2id),
+            'indices': synset_indices,
+            'values': synset_values,
+        }
+
+        with open(output_path, 'w') as f:
+            json.dump(graph, f)
+
+        synder_graph = {
+            'n': len(synset2id),
+            'indices': synder_indices,
+            'values': synder_values,
+        }
+
+        synder_output_path = 'data/synder_graph.json'
+        with open(synder_output_path, 'w') as f:
+            json.dump(synder_graph, f)

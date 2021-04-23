@@ -23,6 +23,10 @@ class SimpleModel(pl.LightningModule):
         if self.hparams.use_graph_convolution:
             self.graph_encoder = GraphEncoder(self.hparams)
 
+        if self.hparams.use_syntag_related_graph:
+            self.synder_graph_encoder = GraphEncoder(
+                self.hparams, graph_path='data/synder_graph.json')
+
         # For predictions on diff models with argument alpha (un)optimized
         try:
             if self.hparams.optimize_alpha:
@@ -52,15 +56,23 @@ class SimpleModel(pl.LightningModule):
             word_ids, subword_indices=subword_indices, sequence_lengths=tokenized_sequence_lengths)
         word_embeddings = word_embeddings[synset_indices]
 
+        # Freeze and unfreeze synset embeddings
+        if self.current_epoch > self.hparams.freeze_synset_embeddings_for:
+            for param in self.synset_scorer.parameters():
+                param.requires_grad = True
+
         synset_scores = self.synset_scorer(word_embeddings)
         synset_scores /= self.hparams.temperature
 
         if self.hparams.power_iterations > 0:
             k_iter = self.hparams.power_iterations
             curr_logits = synset_scores
-            for _ in range(k_iter):
-                curr_logits = (
-                    1 - self.alpha) * self.graph_encoder(curr_logits) + (self.alpha * synset_scores)
+            for iteration_ in range(k_iter):
+                if self.hparams.use_syntag_related_graph and iteration_ > self.hparams.train_synder_for:
+                    curr_logits = (1 - self.alpha) * (self.synder_graph_encoder(curr_logits) + self.graph_encoder(curr_logits)) + (self.alpha * synset_scores)
+                else:
+                    curr_logits = (
+                        1 - self.alpha) * self.graph_encoder(curr_logits) + (self.alpha * synset_scores)
             synset_scores = curr_logits
 
         return {'synsets': synset_scores}
@@ -361,9 +373,12 @@ class SimpleModel(pl.LightningModule):
         parser.add_argument('--loss_type', type=str, default='cross_entropy')
 
         parser.add_argument('--synset_embeddings_path', type=str,
-                            default='data/embeddings/synset_embeddings.txt')
+                            default='data/embeddings/ares_synset_embeddings.txt')
         parser.add_argument('--use_synset_embeddings',
                             default=True, action='store_true')
+
+        parser.add_argument(
+            '--freeze_synset_embeddings_for', type=int, default=1000)
 
         parser.add_argument('--graph_path', type=str,
                             default='data/wn_graph.json')
@@ -400,6 +415,9 @@ class SimpleModel(pl.LightningModule):
 
         parser.add_argument('--power_iterations', type=int, default=10)
         parser.add_argument('--alpha', type=float, default=0.15)
-        parser.add_argument('--optimize_alpha', default=False, action='store_true')
+        parser.add_argument('--optimize_alpha',
+                            default=False, action='store_true')
+
+        parser.add_argument('--train_synder_for', type=int, default=1000)
 
         return parser
