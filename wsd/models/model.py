@@ -24,14 +24,12 @@ class SimpleModel(pl.LightningModule):
             self.graph_encoder = GraphEncoder(self.hparams)
 
         if self.hparams.use_syntag_related_graph:
-            self.synder_graph_encoder = GraphEncoder(
-                self.hparams, graph_path='data/synder_graph.json')
+            self.synder_graph_encoder = GraphEncoder(self.hparams, graph_path='data/synder_graph.json')
 
         # For predictions on diff models with argument alpha (un)optimized
         try:
             if self.hparams.optimize_alpha:
-                self.alpha = torch.nn.Parameter(
-                    torch.tensor(0.15), requires_grad=True)
+                self.alpha = torch.nn.Parameter(torch.tensor(0.15), requires_grad=True)
             else:
                 self.alpha = self.hparams.alpha
         except (AttributeError, KeyError):
@@ -68,7 +66,7 @@ class SimpleModel(pl.LightningModule):
             k_iter = self.hparams.power_iterations
             curr_logits = synset_scores
             for iteration_ in range(k_iter):
-                if self.hparams.use_syntag_related_graph and iteration_ > self.hparams.train_synder_for:
+                if self.hparams.use_syntag_related_graph and iteration_ < self.hparams.train_synder_for:
                     curr_logits = (1 - self.alpha) * (self.synder_graph_encoder(curr_logits) + self.graph_encoder(curr_logits)) + (self.alpha * synset_scores)
                 else:
                     curr_logits = (
