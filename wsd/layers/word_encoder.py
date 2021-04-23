@@ -9,9 +9,8 @@ class WordEncoder(nn.Module):
     def __init__(self, hparams, padding_token_id):
         super(WordEncoder, self).__init__()
 
-        self.word_embedding = BertEmbedding(
-            model_name=hparams.language_model,
-            fine_tune=hparams.language_model_fine_tuning)
+        self.word_embedding = BertEmbedding(model_name=hparams.language_model,
+                                            fine_tune=hparams.language_model_fine_tuning)
 
         if 'base' in hparams.language_model:
             word_embedding_size = 768
@@ -19,7 +18,8 @@ class WordEncoder(nn.Module):
             word_embedding_size = 1024
 
         self.batch_normalization = nn.BatchNorm1d(word_embedding_size)
-        self.projection = nn.Linear(word_embedding_size, hparams.word_projection_size, bias=False)
+        self.projection = nn.Linear(
+            word_embedding_size, hparams.word_projection_size, bias=False)
         self.word_dropout = nn.Dropout(hparams.word_dropout)
 
         self.word_embedding_size = hparams.word_projection_size
@@ -43,14 +43,16 @@ class BertEmbedding(nn.Module):
     def __init__(self, model_name='bert-base-multilingual-cased', fine_tune=False):
         super(BertEmbedding, self).__init__()
         self.fine_tune = fine_tune
-        config = AutoConfig.from_pretrained(model_name, output_hidden_states=True)
+        config = AutoConfig.from_pretrained(
+            model_name, output_hidden_states=True)
         self.bert = AutoModel.from_pretrained(model_name, config=config)
         if not fine_tune:
             self.bert.eval()
 
     def forward(self, word_ids, subword_indices=None, sequence_lengths=None):
         timesteps = word_ids.shape[1]
-        attention_mask = torch.arange(timesteps, device='cuda' if torch.cuda.is_available() else 'cpu').unsqueeze(0) < sequence_lengths.unsqueeze(1)
+        attention_mask = torch.arange(timesteps, device='cuda' if torch.cuda.is_available(
+        ) else 'cpu').unsqueeze(0) < sequence_lengths.unsqueeze(1)
 
         if not self.fine_tune:
             with torch.no_grad():
@@ -62,5 +64,7 @@ class BertEmbedding(nn.Module):
                 input_ids=word_ids,
                 attention_mask=attention_mask)
 
-        word_embeddings = 0.25 * (word_embeddings[2][-1] + word_embeddings[2][-2] + word_embeddings[2][-3] + word_embeddings[2][-4])
+        word_embeddings = 0.25 * \
+            (word_embeddings[2][-1] + word_embeddings[2][-2] +
+             word_embeddings[2][-3] + word_embeddings[2][-4])
         return word_embeddings
