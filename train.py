@@ -44,6 +44,9 @@ if __name__ == '__main__':
     parser.add_argument('--shuffle', action='store_true', default=True)
     parser.add_argument('--num_workers', type=int, default=4)
 
+    # Add syntag & related edges in a graph of its own
+    parser.add_argument('--use_syntag_related_graph', default=False)
+
     # Add checkpoint args.
     parser.add_argument('--checkpoint_dir', type=str, default='checkpoints')
 
@@ -86,7 +89,8 @@ if __name__ == '__main__':
         include_also_see_synsets=hparams.include_also_see,
         include_pertainyms_synsets=hparams.include_pertainyms,
         include_pagerank_synsets=hparams.include_pagerank,
-        pagerank_k=hparams.pagerank_k)
+        pagerank_k=hparams.pagerank_k,
+        use_synder=hparams.use_syntag_related_graph)
 
     synset_embeddings = None if not hparams.use_synset_embeddings else processor.load_synset_embeddings(
         hparams.synset_embeddings_path)
