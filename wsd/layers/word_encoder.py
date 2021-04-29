@@ -5,7 +5,6 @@ from transformers import AutoModel, AutoConfig
 
 
 class WordEncoder(nn.Module):
-
     def __init__(self, hparams, padding_token_id):
         super(WordEncoder, self).__init__()
 

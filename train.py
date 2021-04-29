@@ -38,6 +38,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--include_pagerank', default=True, action='store_true')
     parser.add_argument('--pagerank_k', type=int, default=10)
+    parser.add_argument('--offline_pagerank_path', type=str, default=None)
 
     # Add dataloader args.
     parser.add_argument('--batch_size', type=int, default=128)
@@ -49,6 +50,9 @@ if __name__ == '__main__':
 
     # Add checkpoint args.
     parser.add_argument('--checkpoint_dir', type=str, default='checkpoints')
+
+    # Add resume from checkpoint path
+    parser.add_argument('--resume_from', type=str, default=None)
 
     # Add model-specific args.
     parser = SimpleModel.add_model_specific_args(parser)
@@ -90,7 +94,8 @@ if __name__ == '__main__':
         include_pertainyms_synsets=hparams.include_pertainyms,
         include_pagerank_synsets=hparams.include_pagerank,
         pagerank_k=hparams.pagerank_k,
-        use_synder=hparams.use_syntag_related_graph)
+        use_synder=hparams.use_syntag_related_graph,
+        pagerank_path=hparams.pagerank_path)
 
     synset_embeddings = None if not hparams.use_synset_embeddings else processor.load_synset_embeddings(
         hparams.synset_embeddings_path)
@@ -125,13 +130,14 @@ if __name__ == '__main__':
     checkpoint_callback = ModelCheckpoint(filepath=model_checkpoint_path,
                                           monitor='val_f1', mode='max',
                                           save_top_k=2, verbose=True)
-
+    # TODO: Validate this line of code
     early_stopping_callback = EarlyStopping(monitor='val_f1', patience=5,
-                                            verbose=True, mode='max')
+                                            verbose=True, mode='max') if hparams.freeze_synset_embeddings_for == 1000 else None
 
     trainer = Trainer.from_argparse_args(hparams,
                                          checkpoint_callback=checkpoint_callback,
-                                         early_stop_callback=early_stopping_callback)
+                                         early_stop_callback=early_stopping_callback,
+                                         resume_from_checkpoint=hparams.resume_from)
 
     trainer.fit(model, train_dataloader=train_dataloader,
                 val_dataloaders=dev_dataloader)

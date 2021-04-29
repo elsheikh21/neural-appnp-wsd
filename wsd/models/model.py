@@ -24,24 +24,20 @@ class SimpleModel(pl.LightningModule):
             self.graph_encoder = GraphEncoder(self.hparams)
 
         if self.hparams.use_syntag_related_graph:
-            self.synder_graph_encoder = GraphEncoder(
-                self.hparams, graph_path='data/synder_graph.json')
+            self.synder_graph_encoder = GraphEncoder(self.hparams, graph_path='data/synder_graph.json')
 
         # For predictions on diff models with argument alpha (un)optimized
         try:
             if self.hparams.optimize_alpha:
-                self.alpha = torch.nn.Parameter(
-                    torch.tensor(0.15), requires_grad=True)
+                self.alpha = torch.nn.Parameter(torch.tensor(0.15), requires_grad=True)
             else:
                 self.alpha = self.hparams.alpha
         except (AttributeError, KeyError):
             self.alpha = self.hparams.alpha
         except RuntimeError:
-            self.alpha = torch.nn.Parameter(
-                torch.tensor(0.15), requires_grad=True)
+            self.alpha = torch.nn.Parameter(torch.tensor(0.15), requires_grad=True)
 
-        self.synset_scorer = nn.Linear(
-            word_embedding_size, self.num_synsets, bias=False)
+        self.synset_scorer = nn.Linear(word_embedding_size, self.num_synsets, bias=False)
         if synset_embeddings is not None:
             with torch.no_grad():
                 self.synset_scorer.weight.copy_(synset_embeddings)
@@ -56,10 +52,11 @@ class SimpleModel(pl.LightningModule):
             word_ids, subword_indices=subword_indices, sequence_lengths=tokenized_sequence_lengths)
         word_embeddings = word_embeddings[synset_indices]
 
+        #! Can workaround it freeze-then-thaw
         # Freeze and unfreeze synset embeddings
-        if self.current_epoch > self.hparams.freeze_synset_embeddings_for:
-            for param in self.synset_scorer.parameters():
-                param.requires_grad = True
+        # if self.current_epoch > self.hparams.freeze_synset_embeddings_for:
+        #     for param in self.synset_scorer.parameters():
+        #         param.requires_grad = True
 
         synset_scores = self.synset_scorer(word_embeddings)
         synset_scores /= self.hparams.temperature
@@ -68,7 +65,7 @@ class SimpleModel(pl.LightningModule):
             k_iter = self.hparams.power_iterations
             curr_logits = synset_scores
             for iteration_ in range(k_iter):
-                if self.hparams.use_syntag_related_graph and iteration_ > self.hparams.train_synder_for:
+                if self.hparams.use_syntag_related_graph and iteration_ < self.hparams.train_synder_for:
                     curr_logits = (1 - self.alpha) * (self.synder_graph_encoder(curr_logits) + self.graph_encoder(curr_logits)) + (self.alpha * synset_scores)
                 else:
                     curr_logits = (

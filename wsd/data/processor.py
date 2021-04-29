@@ -37,6 +37,7 @@ class Processor(object):
             include_pertainym_synsets=False,
             include_pagerank_synsets=False,
             pagerank_path='data/pr.txt',
+            offline_pagerank_path=None,
             pagerank_k=10,
             use_synder=False,
             unknown_token='<unk>',
@@ -90,7 +91,7 @@ class Processor(object):
             Processor._build_graph_wrapper(self.synset2id, self.synset2similars, self.synset2groups,
                                            self.synset2related, self.synset2hypernyms, self.synset2hyponyms,
                                            self.synset2also_see, self.synset2pertainyms, self.synset2syntags,
-                                           graph_file_path, use_synder)
+                                           offline_pagerank_path, graph_file_path, use_synder)
 
     def encode_sentence(self, sentence, MAX_LENGTH=500):
         word_ids = []
@@ -612,8 +613,7 @@ class Processor(object):
                         if len(synset2pagerank[synset_id]) == pagerank_k:
                             break
 
-        print('# synsets:', len(synset2id) - 1)
-        print('# words:', len(word2synsets))
+        print(f'# synsets: {len(synset2id) - 1}', f'# words: {len(word2synsets)}', sep='\n')
 
         return {
             'synset2id': synset2id,
@@ -633,7 +633,6 @@ class Processor(object):
         }
 
     def fetch_synset_name(self, synset):
-        key = self.synset_offset2sense_key[synset]
         patching_data = {
             'ddc%1:06:01::': 'dideoxycytosine.n.01.DDC',
             'ddi%1:06:01::': 'dideoxyinosine.n.01.DDI',
@@ -644,6 +643,8 @@ class Processor(object):
             'kb%1:23:01::': 'kilobyte.n.02.kB',
             'kb%1:23:03::': 'kilobyte.n.01.kB',
         }
+
+        key = self.synset_offset2sense_key[synset]
         try:
             lemma = wn.lemma_from_key(key)
         except WordNetError as e:
@@ -676,9 +677,13 @@ class Processor(object):
         return torch.as_tensor(np_vectors)
 
     @staticmethod
-    def _build_graph_wrapper(synset2id, synset2similars, synset2groups, synset2related, synset2hypernyms, synset2hyponyms, synset2also_see, synset2pertainyms, synset2syntags, output_path, use_synder):
-        # TODO: Clean this method
-        if use_synder:
+    def _build_graph_wrapper(synset2id, synset2similars, synset2groups,
+                             synset2related, synset2hypernyms, synset2hyponyms,
+                             synset2also_see, synset2pertainyms, synset2syntags,
+                             offline_pagerank_path, output_path, use_synder):
+        if offline_pagerank_path:
+            Processor._build_graph_offline_ppr(offline_pagerank_path, output_path)
+        elif use_synder:
             Processor._build_graph(synset2id, synset2similars, synset2groups,
                                    synset2related, synset2hypernyms, synset2hyponyms,
                                    synset2also_see, synset2pertainyms, synset2syntags, output_path)
@@ -826,3 +831,25 @@ class Processor(object):
         synder_output_path = 'data/synder_graph.json'
         with open(synder_output_path, 'w') as f:
             json.dump(synder_graph, f)
+
+    @staticmethod
+    def _build_graph_offline_ppr(pagerank_path, output_path):
+        with open(pagerank_path, encoding='utf-8', mode='r') as file_:
+            file_content = file_.read().splitlines()
+
+        synset_indices = [[], []]
+        synset_weights = []
+        for line in file_content:
+            synset1, synset2, weight = line.strip().split('\t')
+            synset_indices[0].append(synset2id[synset1])
+            synset_indices[1].append(synset2id[synset2])
+            synset_weights.append(weight)
+
+        graph = {
+            'n': len(list(set(synset_indices))),
+            'indices': synset_indices,
+            'values': synset_weights,
+        }
+
+        with open(output_path, 'w') as f:
+            json.dump(graph, f)
