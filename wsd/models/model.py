@@ -39,8 +39,9 @@ class SimpleModel(pl.LightningModule):
 
         self.synset_scorer = nn.Linear(word_embedding_size, self.num_synsets, bias=False)
         if synset_embeddings is not None:
-            with torch.no_grad():
-                self.synset_scorer.weight.copy_(synset_embeddings)
+            if not self.hparams.thaw_embeddings:
+                with torch.no_grad():
+                    self.synset_scorer.weight.copy_(synset_embeddings)
 
     def forward(self, x):
         word_ids = x['word_ids']
@@ -51,12 +52,6 @@ class SimpleModel(pl.LightningModule):
         word_embeddings = self.word_encoder(
             word_ids, subword_indices=subword_indices, sequence_lengths=tokenized_sequence_lengths)
         word_embeddings = word_embeddings[synset_indices]
-
-        #! Can workaround it freeze-then-thaw
-        # Freeze and unfreeze synset embeddings
-        # if self.current_epoch > self.hparams.freeze_synset_embeddings_for:
-        #     for param in self.synset_scorer.parameters():
-        #         param.requires_grad = True
 
         synset_scores = self.synset_scorer(word_embeddings)
         synset_scores /= self.hparams.temperature
@@ -370,12 +365,10 @@ class SimpleModel(pl.LightningModule):
         parser.add_argument('--loss_type', type=str, default='cross_entropy')
 
         parser.add_argument('--synset_embeddings_path', type=str,
-                            default='data/embeddings/ares_synset_embeddings.txt')
+                            default='data/embeddings/synset_embeddings.txt')
         parser.add_argument('--use_synset_embeddings',
                             default=True, action='store_true')
-
-        parser.add_argument(
-            '--freeze_synset_embeddings_for', type=int, default=1000)
+        parser.add_argument('--thaw_embeddings', default=False, action='store_true')
 
         parser.add_argument('--graph_path', type=str,
                             default='data/wn_graph.json')

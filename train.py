@@ -95,7 +95,7 @@ if __name__ == '__main__':
         include_pagerank_synsets=hparams.include_pagerank,
         pagerank_k=hparams.pagerank_k,
         use_synder=hparams.use_syntag_related_graph,
-        pagerank_path=hparams.pagerank_path)
+        offline_pagerank_path=hparams.offline_pagerank_path)
 
     synset_embeddings = None if not hparams.use_synset_embeddings else processor.load_synset_embeddings(
         hparams.synset_embeddings_path)
@@ -130,9 +130,8 @@ if __name__ == '__main__':
     checkpoint_callback = ModelCheckpoint(filepath=model_checkpoint_path,
                                           monitor='val_f1', mode='max',
                                           save_top_k=2, verbose=True)
-    # TODO: Validate this line of code
     early_stopping_callback = EarlyStopping(monitor='val_f1', patience=5,
-                                            verbose=True, mode='max') if hparams.freeze_synset_embeddings_for == 1000 else None
+                                            verbose=True, mode='max')
 
     trainer = Trainer.from_argparse_args(hparams,
                                          checkpoint_callback=checkpoint_callback,
