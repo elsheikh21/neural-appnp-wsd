@@ -1,3 +1,4 @@
+from os.path import isfile 
 import json
 import random
 
@@ -8,6 +9,7 @@ from transformers import AutoTokenizer
 
 from nltk.corpus import wordnet as wn
 from nltk.corpus.reader.wordnet import WordNetError
+from tqdm.auto import tqdm
 
 
 class Processor(object):
@@ -88,10 +90,13 @@ class Processor(object):
             self.synset2pertainyms = maps['synset2pertainyms']
             self.synset2pagerank = maps['synset2pagerank']
             self.synset2syntags = maps['synset2syntags']
-            Processor._build_graph_wrapper(self.synset2id, self.synset2similars, self.synset2groups,
-                                           self.synset2related, self.synset2hypernyms, self.synset2hyponyms,
-                                           self.synset2also_see, self.synset2pertainyms, self.synset2syntags,
-                                           offline_pagerank_path, graph_file_path, use_synder)
+            if offline_pagerank_path:
+                self._build_graph_offline_ppr(offline_pagerank_path, graph_file_path)
+            else:
+                Processor._build_graph_wrapper(self.synset2id, self.synset2similars, self.synset2groups,
+                                               self.synset2related, self.synset2hypernyms, self.synset2hyponyms,
+                                               self.synset2also_see, self.synset2pertainyms, self.synset2syntags,
+                                               graph_file_path, use_synder)
 
     def encode_sentence(self, sentence, MAX_LENGTH=500):
         word_ids = []
@@ -613,7 +618,8 @@ class Processor(object):
                         if len(synset2pagerank[synset_id]) == pagerank_k:
                             break
 
-        print(f'# synsets: {len(synset2id) - 1}', f'# words: {len(word2synsets)}', sep='\n')
+        print(f'# synsets: {len(synset2id) - 1}',
+              f'# words: {len(word2synsets)}', sep='\n')
 
         return {
             'synset2id': synset2id,
@@ -680,19 +686,17 @@ class Processor(object):
     def _build_graph_wrapper(synset2id, synset2similars, synset2groups,
                              synset2related, synset2hypernyms, synset2hyponyms,
                              synset2also_see, synset2pertainyms, synset2syntags,
-                             offline_pagerank_path, output_path, use_synder):
-        if offline_pagerank_path:
-            Processor._build_graph_offline_ppr(offline_pagerank_path, output_path)
-        elif use_synder:
-            Processor._build_graph(synset2id, synset2similars, synset2groups,
-                                   synset2related, synset2hypernyms, synset2hyponyms,
-                                   synset2also_see, synset2pertainyms, synset2syntags, output_path)
-        else:
+                             output_path, use_synder):
+        if use_synder:
             Processor._build_synder_graphs(synset2id, synset2similars,
                                            synset2groups, synset2related,
                                            synset2hypernyms, synset2hyponyms,
                                            synset2also_see, synset2pertainyms,
                                            synset2syntags, output_path)
+        else:
+            Processor._build_graph(synset2id, synset2similars, synset2groups,
+                                   synset2related, synset2hypernyms, synset2hyponyms,
+                                   synset2also_see, synset2pertainyms, synset2syntags, output_path)
 
     @staticmethod
     def _build_graph(synset2id, synset2similars, synset2groups,
@@ -755,7 +759,7 @@ class Processor(object):
 
         with open(output_path, 'w') as f:
             json.dump(graph, f)
-
+    
     @staticmethod
     def _build_synder_graphs(synset2id, synset2similars, synset2groups,
                              synset2related, synset2hypernyms, synset2hyponyms,
@@ -832,24 +836,32 @@ class Processor(object):
         with open(synder_output_path, 'w') as f:
             json.dump(synder_graph, f)
 
-    @staticmethod
-    def _build_graph_offline_ppr(pagerank_path, output_path):
-        with open(pagerank_path, encoding='utf-8', mode='r') as file_:
-            file_content = file_.read().splitlines()
+    def _build_graph_offline_ppr(self, offline_pagerank_path, output_path):
+        if isfile(f'{offline_pagerank_path}_serialized.json'):
+            with open(f'{offline_pagerank_path}_serialized.json', 'r') as f:
+                graph = json.load(f)
+        else:
+            with open(offline_pagerank_path, encoding='utf-8', mode='r') as file_:
+                file_content = file_.read().splitlines()
 
-        synset_indices = [[], []]
-        synset_weights = []
-        for line in file_content:
-            synset1, synset2, weight = line.strip().split('\t')
-            synset_indices[0].append(synset2id[synset1])
-            synset_indices[1].append(synset2id[synset2])
-            synset_weights.append(weight)
+            synset_indices = [[], []]
+            synset_weights = []
+            for line in tqdm(file_content, desc='Parsing Offline PPR file', leave=False):
+                synset1_, synset2_, weight = line.strip().split('\t')
+                synset1_idx = self.synset2id[self.fetch_synset_name(synset1_)]
+                synset2_idx = self.synset2id[self.fetch_synset_name(synset2_)]
+                synset_indices[0].append(synset1_idx)
+                synset_indices[1].append(synset2_idx)
+                synset_weights.append(float(weight))
 
-        graph = {
-            'n': len(list(set(synset_indices))),
-            'indices': synset_indices,
-            'values': synset_weights,
-        }
+            graph = {
+                'n': len(self.synset2id),
+                'indices': synset_indices,
+                'values': synset_weights,
+            }
+
+            with open(f'{offline_pagerank_path}_serialized.json', 'w') as f:
+                json.dump(graph, f)
 
         with open(output_path, 'w') as f:
             json.dump(graph, f)

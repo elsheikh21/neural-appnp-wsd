@@ -25,18 +25,23 @@ if __name__ == '__main__':
                         default='data/preprocessed/semeval2007/semeval2007.json')
 
     # Data processing
-    parser.add_argument('--include_hypernyms', default=True, action='store_true')
-    parser.add_argument('--include_hyponyms', default=True, action='store_true')
+    parser.add_argument('--include_hypernyms',
+                        default=True, action='store_true')
+    parser.add_argument('--include_hyponyms',
+                        default=True, action='store_true')
     parser.add_argument('--include_similar', default=True, action='store_true')
     parser.add_argument('--include_related', default=True, action='store_true')
-    parser.add_argument('--include_also_see', default=True, action='store_true')
-    parser.add_argument('--include_verb_groups', default=True, action='store_true')
+    parser.add_argument('--include_also_see',
+                        default=True, action='store_true')
+    parser.add_argument('--include_verb_groups',
+                        default=True, action='store_true')
     parser.add_argument('--include_instance_hypernyms', action='store_true')
     parser.add_argument('--include_instance_hyponyms', action='store_true')
     parser.add_argument('--include_pertainyms', action='store_true')
     parser.add_argument('--include_syntag', default=True, action='store_true')
 
-    parser.add_argument('--include_pagerank', default=True, action='store_true')
+    parser.add_argument('--include_pagerank',
+                        default=True, action='store_true')
     parser.add_argument('--pagerank_k', type=int, default=10)
     parser.add_argument('--offline_pagerank_path', type=str, default=None)
 
@@ -46,7 +51,8 @@ if __name__ == '__main__':
     parser.add_argument('--num_workers', type=int, default=4)
 
     # Add syntag & related edges in a graph of its own
-    parser.add_argument('--use_syntag_related_graph', default=False)
+    parser.add_argument('--use_syntag_related_graph',
+                        default=False, action='store_true')
 
     # Add checkpoint args.
     parser.add_argument('--checkpoint_dir', type=str, default='checkpoints')
@@ -130,13 +136,17 @@ if __name__ == '__main__':
     checkpoint_callback = ModelCheckpoint(filepath=model_checkpoint_path,
                                           monitor='val_f1', mode='max',
                                           save_top_k=2, verbose=True)
-    early_stopping_callback = EarlyStopping(monitor='val_f1', patience=5,
-                                            verbose=True, mode='max')
+
+    if hparams.thaw_embeddings_after is None:
+        early_stopping_callback = EarlyStopping(monitor='val_f1', patience=5,
+                                                verbose=True, mode='max')
+    else:
+        early_stopping_callback = None
+        print("No Early Stopping is deployed")
 
     trainer = Trainer.from_argparse_args(hparams,
                                          checkpoint_callback=checkpoint_callback,
-                                         early_stop_callback=early_stopping_callback,
-                                         resume_from_checkpoint=hparams.resume_from)
+                                         early_stop_callback=early_stopping_callback)
 
     trainer.fit(model, train_dataloader=train_dataloader,
                 val_dataloaders=dev_dataloader)

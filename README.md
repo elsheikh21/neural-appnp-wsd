@@ -42,24 +42,24 @@ This repo hosts my work for my masters program thesis in NLP, Under the supervis
 
 ### Sense Embeddings
 
-Pre-preprocessed ARES embeddings is needed to train your model:
+Pre-preprocessed SensEmBERT+LMMS OR ARES embeddings is needed to train your model:
 
 - [SensEmBERT + LMMS Embeddings](https://drive.google.com/file/d/11v4FUMyHdpFBrkRJt8cGyy6xkM9a_Emp/view?usp=sharing)
+
+- [ARES Embeddings](https://drive.google.com/file/d/11riHw5BLay9ORAbLC-2Cl6dYXnd9ZJnx/view?usp=sharing)
 
 ---
 
 ## Evaluate
 
-- vim the `predict_eval_script.sh` to change
-  - for loop, just add your list of best models in the following format `exp_folder/best_model.ckpt`
-  - `--model_input` points to the dataset to be used for evaluation
-  - `--evaluation_input` points to the gold file of the eval dataset
+- vim the `predict_eval_script.sh` to add your `<ckpt_dir>/<best_mdl_path>`
 
 - then run the following
   
   ```bash
-  cd yat_thesis
-  sh predict_eval_script.sh
+  cd wsd_thesis
+  sh predict_eval_script.sh # OR
+  nohup sh predict_eval_script.sh > eval_script.out  # to log the results
   ```
 
 ---

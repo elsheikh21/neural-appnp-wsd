@@ -1,4 +1,4 @@
-for BST_EXP_MDL in fresh_cp/checkpoint_val_f1=0.7099_epoch=008.ckpt; do
+for BST_EXP_MDL in  test_split_adj_graph/checkpoint_val_f1=0.XXXX_epoch=XXX.ckpt test_offline_pagerank_top10/checkpoint_val_f1=0.XXXX_epoch=XXX.ckpt test_offline_pagerank_top5/checkpoint_val_f1=0.XXXX_epoch=XXX.ckpt; do
     for test_set in all senseval2 senseval3 semeval2007 semeval2013 semeval2015; do
         echo Testing model ${BST_EXP_MDL} on ${test_set} test-set
         CKPT_DIR="${BST_EXP_MDL%%/*}"

@@ -39,9 +39,8 @@ class SimpleModel(pl.LightningModule):
 
         self.synset_scorer = nn.Linear(word_embedding_size, self.num_synsets, bias=False)
         if synset_embeddings is not None:
-            if not self.hparams.thaw_embeddings:
-                with torch.no_grad():
-                    self.synset_scorer.weight.copy_(synset_embeddings)
+            with torch.no_grad():
+                self.synset_scorer.weight.copy_(synset_embeddings)
 
     def forward(self, x):
         word_ids = x['word_ids']
@@ -55,6 +54,10 @@ class SimpleModel(pl.LightningModule):
 
         synset_scores = self.synset_scorer(word_embeddings)
         synset_scores /= self.hparams.temperature
+
+        if self.hparams.thaw_embeddings_after and self.current_epoch > self.hparams.thaw_embeddings_after:
+            for param in self.synset_scorer.parameters():
+                param.requires_grad = True
 
         if self.hparams.power_iterations > 0:
             k_iter = self.hparams.power_iterations
@@ -365,10 +368,10 @@ class SimpleModel(pl.LightningModule):
         parser.add_argument('--loss_type', type=str, default='cross_entropy')
 
         parser.add_argument('--synset_embeddings_path', type=str,
-                            default='data/embeddings/synset_embeddings.txt')
+                            default='data/embeddings/ares_synset_embeddings.txt')
         parser.add_argument('--use_synset_embeddings',
                             default=True, action='store_true')
-        parser.add_argument('--thaw_embeddings', default=False, action='store_true')
+        parser.add_argument('--thaw_embeddings_after', type=int)
 
         parser.add_argument('--graph_path', type=str,
                             default='data/wn_graph.json')
