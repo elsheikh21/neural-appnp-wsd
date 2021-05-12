@@ -38,7 +38,7 @@ if __name__ == '__main__':
     parser.add_argument('--include_instance_hypernyms', action='store_true')
     parser.add_argument('--include_instance_hyponyms', action='store_true')
     parser.add_argument('--include_pertainyms', action='store_true')
-    parser.add_argument('--include_syntag', default=True, action='store_true')
+    parser.add_argument('--include_syntag', default=False, action='store_true')
 
     parser.add_argument('--include_pagerank',
                         default=True, action='store_true')
@@ -73,6 +73,7 @@ if __name__ == '__main__':
         gradient_clip_val=5.0,
         row_log_interval=128,
         deterministic=True
+        # accumulate_grad_batches=2 # in case of halving the batch size
     )
 
     # Store the arguments in hparams.
@@ -137,12 +138,8 @@ if __name__ == '__main__':
                                           monitor='val_f1', mode='max',
                                           save_top_k=2, verbose=True)
 
-    if hparams.thaw_embeddings_after is None:
-        early_stopping_callback = EarlyStopping(monitor='val_f1', patience=5,
-                                                verbose=True, mode='max')
-    else:
-        early_stopping_callback = None
-        print("No Early Stopping is deployed")
+    early_stopping_callback = EarlyStopping(monitor='val_f1', patience=5,
+                                            verbose=True, mode='max') if hparams.thaw_embeddings_after is None else None
 
     trainer = Trainer.from_argparse_args(hparams,
                                          checkpoint_callback=checkpoint_callback,

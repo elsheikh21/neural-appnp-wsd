@@ -695,8 +695,10 @@ class Processor(object):
                                            synset2syntags, output_path)
         else:
             Processor._build_graph(synset2id, synset2similars, synset2groups,
-                                   synset2related, synset2hypernyms, synset2hyponyms,
-                                   synset2also_see, synset2pertainyms, synset2syntags, output_path)
+                                   synset2related, synset2hypernyms,
+                                   synset2hyponyms, synset2also_see,
+                                   synset2pertainyms, synset2syntags,
+                                   output_path)
 
     @staticmethod
     def _build_graph(synset2id, synset2similars, synset2groups,
