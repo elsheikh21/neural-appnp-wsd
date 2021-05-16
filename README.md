@@ -1,9 +1,9 @@
-# Extending EWISER with EACL 2021 & APPNP & Syntagmatic Edges
-
-This repo hosts my work for my masters program thesis in NLP, Under the supervision of Prof. Roberto Navigli and PhD. Michele Bevilacqua. Trying to break the State of the Art (SOTA) in Word Sense Disambiguation (WSD) task by integrating EWISER approach with Framing WSD as multilabel classification problem by Simone Cantone and applying Approximate Personalized Propagation of Neural Predictions. The SOTA model achieved by EWISER was 79.2% and by EACL 2021 paper by Simone Cantone was 80.2% both were evaluated on WSD Unified Evaluation framework.
+# Exploiting the WordNet Graph Globally by Integrating PageRank into Neural Word Sense Disambiguation
+<!-- 
+This repo hosts the work trying to achieve break the State of the Art (SOTA) in Word Sense Disambiguation (WSD) task by EWISER (Michele Bevilacqua & Roberto Navigli (2020)) by integrating their approach with Approximate Personalized Propagation of Neural Predictions (APPNP). 
 
 ---
-
+-->
 ## Installation
 
 - make sure to have miniconda installed. if not, [install it](https://docs.conda.io/en/latest/miniconda.html)
@@ -32,9 +32,13 @@ This repo hosts my work for my masters program thesis in NLP, Under the supervis
 
 ### EWISER English checkpoints
 
-- [SemCor](https://drive.google.com/file/d/1TIwCn-0NA3yUXG5FOkPgFcoP3aHJmiSZ/view?usp=sharing)
+<!-- - [SemCor](https://drive.google.com/file/d/1TIwCn-0NA3yUXG5FOkPgFcoP3aHJmiSZ/view?usp=sharing)
 - [SemCor + untagged glosses](https://drive.google.com/file/d/1tW4PjTgdRbVvq9CGq-0ePCsgtkXnEGsN/view?usp=sharing)
-- [SemCor + tagged glosses + WordNet Examples](https://drive.google.com/file/d/11RyHBu4PwS3U2wOk-Le9Ziu8R3Hc0NXV/view?usp=sharing)
+- [SemCor + tagged glosses + WordNet Examples](https://drive.google.com/file/d/11RyHBu4PwS3U2wOk-Le9Ziu8R3Hc0NXV/view?usp=sharing) -->
+
+- SemCor
+- SemCor + untagged glosses
+- SemCor + tagged glosses + WordNet Examples
 
 ### Datasets
 
@@ -42,11 +46,11 @@ This repo hosts my work for my masters program thesis in NLP, Under the supervis
 
 ### Sense Embeddings
 
-Pre-preprocessed SensEmBERT+LMMS OR ARES embeddings is needed to train your model:
+Pre-preprocessed SensEmBERT+LMMS <!--  OR ARES  --> embeddings is needed to train your model:
 
 - [SensEmBERT + LMMS Embeddings](https://drive.google.com/file/d/11v4FUMyHdpFBrkRJt8cGyy6xkM9a_Emp/view?usp=sharing)
 
-- [ARES Embeddings](https://drive.google.com/file/d/11riHw5BLay9ORAbLC-2Cl6dYXnd9ZJnx/view?usp=sharing)
+<!-- - [ARES Embeddings](https://drive.google.com/file/d/11riHw5BLay9ORAbLC-2Cl6dYXnd9ZJnx/view?usp=sharing) -->
 
 ---
 

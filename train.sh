@@ -1,6 +1,3 @@
-# FIXME: THAW EMBEDDINGS
-nohup python3 train.py --name test_unfreeze_synset_embeddings --resume_from checkpoints/fresh_trail_new_machine/checkpoint_val_f1=0.7077_epoch=004.ckpt --thaw_embeddings > test_unfreeze_synset_embeddings.out & 
-
 # Training script
 python3 train.py --name <exp_name> \
                  --train_path data/preprocessed/glosses/semcor.glosses.untagged.json

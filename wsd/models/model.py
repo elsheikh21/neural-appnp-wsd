@@ -420,7 +420,7 @@ class SimpleModel(pl.LightningModule):
         table = PrettyTable(["Modules", "Parameters"])
         total_params = 0
         for name, parameter in self.named_parameters():
-            if parameter.requires_grad:
+            if not parameter.requires_grad:
                 continue
             param = parameter.numel()
             table.add_row([name, param])
@@ -428,39 +428,3 @@ class SimpleModel(pl.LightningModule):
         print(table)
         print(f"Total Trainable Params: {total_params}")
         return total_params
-
-    def print_summary(self, show_weights=False, show_parameters=True):
-        import numpy as np
-        import torch
-        from torch.nn.modules.module import _addindent
-        """
-        Summarizes torch model by showing trainable parameters and weights.
-        """
-        tmpstr = self.__class__.__name__ + ' (\n'
-        for key, module in self._modules.items():
-            # if it contains layers let call it recursively to get params and weights
-            if type(module) in [
-                torch.nn.modules.container.Container,
-                torch.nn.modules.container.Sequential
-            ]:
-                modstr = self.print_summary()
-            else:
-                modstr = module.__repr__()
-            modstr = _addindent(modstr, 2)
-
-            params = sum([np.prod(p.size()) for p in module.parameters()])
-            weights = tuple([tuple(p.size()) for p in module.parameters()])
-
-            tmpstr += '  (' + key + '): ' + modstr
-            if show_weights:
-                tmpstr += ', weights={}'.format(weights)
-            if show_parameters:
-                tmpstr += ', parameters={}'.format(params)
-            tmpstr += '\n'
-
-        tmpstr = tmpstr + ')'
-        print('================== Model Summary =================')
-        print(tmpstr)
-        num_params = sum(p.numel() for p in self.parameters() if p.requires_grad)
-        print(f"Number of parameters: {num_params:,}")
-        print('===================================================')

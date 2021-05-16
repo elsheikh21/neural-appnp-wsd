@@ -16,7 +16,7 @@ if __name__ == '__main__':
     parser.add_argument('--name', type=str, required=True)
 
     # Add seed arg.
-    parser.add_argument('--seed', type=int, default=1873337)
+    parser.add_argument('--seed', type=int, default=2021)
 
     # Add data args.
     parser.add_argument('--train_path', type=str,
@@ -38,7 +38,7 @@ if __name__ == '__main__':
     parser.add_argument('--include_instance_hypernyms', action='store_true')
     parser.add_argument('--include_instance_hyponyms', action='store_true')
     parser.add_argument('--include_pertainyms', action='store_true')
-    parser.add_argument('--include_syntag', default=False, action='store_true')
+    parser.add_argument('--include_syntag', action='store_true')
 
     parser.add_argument('--include_pagerank',
                         default=True, action='store_true')
@@ -73,7 +73,6 @@ if __name__ == '__main__':
         gradient_clip_val=5.0,
         row_log_interval=128,
         deterministic=True
-        # accumulate_grad_batches=2 # in case of halving the batch size
     )
 
     # Store the arguments in hparams.
