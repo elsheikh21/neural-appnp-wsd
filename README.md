@@ -1,4 +1,4 @@
-# Exploiting the WordNet Graph Globally by Integrating PageRank into Neural Word Sense Disambiguation
+# Exploiting the Global WordNet Graph in Neural Word Sense Disambiguation by Integrating Personalized PageRank
 <!-- 
 This repo hosts the work trying to achieve break the State of the Art (SOTA) in Word Sense Disambiguation (WSD) task by EWISER (Michele Bevilacqua & Roberto Navigli (2020)) by integrating their approach with Approximate Personalized Propagation of Neural Predictions (APPNP). 
 -->
@@ -9,17 +9,12 @@ This repository relies on the [`Simone's CODE`](https://github.com/sapienzaNLP/m
 
 ## How to Cite
 ```
-@inproceedings{bevilacqua-navigli-2020-breaking,
-    title = "Breaking Through the 80{\%} Glass Ceiling: {R}aising the State of the Art in Word Sense Disambiguation by Incorporating Knowledge Graph Information",
-    author = "Bevilacqua, Michele  and Navigli, Roberto",
-    booktitle = "Proceedings of the 58th Annual Meeting of the Association for Computational Linguistics",
-    month = jul,
-    year = "2020",
+@inproceedings{elsheikh-bevilacqua-navigli-2020-breaking,
+    title = "Exploiting the Global WordNet Graph in Neural Word Sense Disambiguation by Integrating Personalized PageRank",
+    author = "ElSheikh, Ahmed and Bevilacqua, Michele  and Navigli, Roberto",
+    year = "2021",
     address = "Online",
-    publisher = "Association for Computational Linguistics",
-    url = "https://www.aclweb.org/anthology/2020.acl-main.255",
-    pages = "2854--2864",
-    abstract = "Neural architectures are the current state of the art in Word Sense Disambiguation (WSD). However, they make limited use of the vast amount of relational information encoded in Lexical Knowledge Bases (LKB). We present Enhanced WSD Integrating Synset Embeddings and Relations (EWISER), a neural supervised architecture that is able to tap into this wealth of knowledge by embedding information from the LKB graph within the neural architecture, and to exploit pretrained synset embeddings, enabling the network to predict synsets that are not in the training set. As a result, we set a new state of the art on almost all the evaluation settings considered, also breaking through, for the first time, the 80{\%} ceiling on the concatenation of all the standard all-words English WSD evaluation benchmarks. On multilingual all-words WSD, we report state-of-the-art results by training on nothing but English.",
+    publisher = "Emperical Method for Natural Language Processing",
 }
 ```
 
